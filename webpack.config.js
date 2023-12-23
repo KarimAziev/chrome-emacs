@@ -6,29 +6,41 @@ module.exports = {
   entry: {
     background: ['./src/background.js'],
     'content-script': ['./src/content-script.js'],
-    injected: ['./src/injected.js']
+    injected: ['./src/injected.js'],
   },
   output: {
     filename: '[name].js',
-    path: './app/scripts'
+    path: path.resolve(__dirname, 'app/scripts'),
   },
   module: {
-    loaders: [{
-      test: /\.js$/,
-      loader: 'babel?presets[]=es2015',
-      exclude: /node_modules/
-    }, {
-      test: /codemirror\/mode\/meta/,
-      loader: 'string-replace?search=../lib/codemirror,replace=dummy-codemirror'
-    }]
+    rules: [
+      {
+        test: /\.m?js$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: ['@babel/preset-env'],
+          },
+        },
+      },
+      {
+        test: /codemirror\/mode\/meta/,
+        loader: 'string-replace-loader',
+        options: {
+          search: '../lib/codemirror',
+          replace: 'dummy-codemirror',
+        },
+      },
+    ],
   },
   resolve: {
     alias: {
       'ac-util': path.join(__dirname, 'src', 'util'),
-      'dummy-codemirror': path.join(__dirname, 'src', 'shims', 'codemirror')
-    }
+      'dummy-codemirror': path.join(__dirname, 'src', 'shims', 'codemirror'),
+    },
   },
   externals: {
-    chrome: 'chrome'
-  }
+    chrome: 'chrome',
+  },
 };
