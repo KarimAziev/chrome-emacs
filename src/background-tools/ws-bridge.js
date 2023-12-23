@@ -20,7 +20,10 @@ class WSBridge {
       port.postMessage(JSON.parse(wsMsg.data));
     };
     ws.onclose = (evt) => {
-      port.postMessage({type: 'closed', payload: {code: evt.code, reason: evt.reason}});
+      port.postMessage({
+        type: 'closed',
+        payload: { code: evt.code, reason: evt.reason },
+      });
       port.disconnect();
     };
     return ws;

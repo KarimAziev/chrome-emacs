@@ -1,4 +1,4 @@
-import {injectedHandlerFactory} from './handlers/injected';
+import { injectedHandlerFactory } from './handlers/injected';
 
 const handlers = [];
 
@@ -19,6 +19,7 @@ window.addEventListener('message', function (message) {
   if (message.data.type === 'initialize') {
     const handlerName = message.data.payload.name;
     const Handler = injectedHandlerFactory.getHandler(handlerName);
+
     if (!Handler) {
       console.error(`Atomic Chrome received bad handler name: ${handlerName}`);
       return;

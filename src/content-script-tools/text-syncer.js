@@ -4,6 +4,7 @@ class TextSyncer {
   linkElem(url, title, handler, options) {
     const port = chrome.runtime.connect();
     this.register(port, url, title, handler, options);
+
     port.onMessage.addListener(this.makeMessageListener(handler));
     const textChangeListener = this.makeTextChangeListener(port, handler);
     handler.bindChange(textChangeListener, false);
@@ -35,7 +36,7 @@ class TextSyncer {
   makeTextChangeListener(port, handler) {
     return () => {
       handler.getValue().then((text) => {
-        this.post(port, 'updateText', {text: text});
+        this.post(port, 'updateText', { text: text });
       });
     };
   }
@@ -43,8 +44,9 @@ class TextSyncer {
   register(port, url, title, handler, options) {
     options = options || {};
     handler.getValue().then((text) => {
-      const payload = {url: url, title: title, text: text};
+      const payload = { url: url, title: title, text: text };
       let extension = options.extension;
+
       if (extension) {
         if (extension[0] !== '.') {
           extension = `.${extension}`;
@@ -56,7 +58,7 @@ class TextSyncer {
   }
 
   post(port, type, payload) {
-    port.postMessage({type: type, payload: payload});
+    port.postMessage({ type: type, payload: payload });
   }
 }
 
