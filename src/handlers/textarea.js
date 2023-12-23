@@ -3,7 +3,12 @@ import BaseHandler from './base';
 class TextareaHandler extends BaseHandler {
   setValue(value) {
     this.elem.value = value;
+    var event = new Event('input', {
+      bubbles: true,
+      cancelable: true,
+    });
     super.setValue(value);
+    this.elem.dispatchEvent(event);
   }
 
   getValue() {
