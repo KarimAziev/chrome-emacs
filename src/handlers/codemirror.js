@@ -6,14 +6,14 @@ class CodeMirrorHandler extends InjectorHandler {
   }
 
   setValue(value, options) {
-    options = Object.assign({}, {triggerDOMEvent: false}, options);
+    options = Object.assign({}, { triggerDOMEvent: false }, options);
     super.setValue(value, options);
   }
 }
 
 CodeMirrorHandler.canHandle = function (elem) {
   while (elem) {
-    if (elem.classList.contains('CodeMirror')) {
+    if (elem.classList && elem.classList.contains('CodeMirror')) {
       return true;
     }
     elem = elem.parentElement;
