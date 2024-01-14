@@ -16,11 +16,15 @@ class InjectedMonacoHandler extends BaseInjectedHandler {
 
   setValue(value) {
     const editor = this.editor.getModels()[0];
-
     editor.setValue(value);
   }
+
   getValue() {
-    return Promise.resolve(this.elem.value);
+    const model = this.editor.getModels()[0];
+    if (model) {
+      const value = model.getValue();
+      return value;
+    }
   }
 
   bindChange() {}

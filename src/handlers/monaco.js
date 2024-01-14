@@ -17,7 +17,8 @@ class MonacoHandler extends InjectorHandler {
   }
 
   getValue() {
-    return Promise.resolve(this.elem.value);
+    const value = super.getValue();
+    return Promise.resolve(value);
   }
 }
 
