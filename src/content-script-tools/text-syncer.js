@@ -48,10 +48,12 @@ class TextSyncer {
       let extension = options.extension;
 
       if (extension) {
-        if (extension[0] !== '.') {
-          extension = `.${extension}`;
-        }
-        payload.extension = extension;
+        const normalizeExtension = (ext) =>
+          ext && ext[0] !== '.' ? `.${ext}` : ext;
+
+        payload.extension = Array.isArray(extension)
+          ? extension.map(normalizeExtension)
+          : normalizeExtension(extension);
       }
       this.post(port, 'register', payload);
     });
