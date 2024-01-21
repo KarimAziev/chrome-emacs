@@ -1,46 +1,44 @@
-# Atomic Chrome
+# Atomic Chrome for Emacs
 
-## Use Atom to edit in Chrome
+This fork of Atomic Chrome has been updated and improved with the following changes:
 
-![atom-icon](https://cloud.githubusercontent.com/assets/1436271/12668235/c228c514-c697-11e5-8cea-e71acabcd300.png)
-![plus-icon](https://cloud.githubusercontent.com/assets/1436271/12668237/c23ab44a-c697-11e5-9076-50b70a1c3be7.png)
-![chrome-icon](https://cloud.githubusercontent.com/assets/1436271/12668236/c233a4c0-c697-11e5-8bba-882291db3f65.png)
-
-## Screencast
-
-### Github issue (textarea)
-
-![github](https://cloud.githubusercontent.com/assets/1436271/12668227/afee6a52-c697-11e5-9b19-c880a0e54132.gif)
-
-### Gmail (contenteditable)
-
-![gmail](https://cloud.githubusercontent.com/assets/1436271/12668226/afe32e26-c697-11e5-9814-2158e665f774.gif)
+- Migration to Chrome Extension Manifest V3.
+- Rewriting in TypeScript for improved stability and maintainability.
 
 ## Installation
 
-You need to install
+To start using Emacs to edit in Chrome, you will need to setup the Chrome extension locally until it is published to the Chrome Web Store:
 
-* [The Chrome Plugin](https://chrome.google.com/webstore/detail/atomic-chrome/lhaoghhllmiaaagaffababmkdllgfcmc) (Atomic Chrome from the Chrome Store)
-* [The Atom package](https://atom.io/packages/atomic-chrome) (`atomic-chrome` from apm)
+1. Clone the repository to your local machine.
+2. Ensure that you have the correct version of Node.js installed. You can find the required version in the `.nvmrc` file in the repository. If you are using NVM (Node Version Manager), you can switch to the correct version with `nvm use`.
+3. Run `npm install` to install all the required dependencies.
+4. Build the extension by running `npm run build`.
+
+Once the build process is complete, you'll have a `app` directory containing the built extension which can be loaded into Chrome:
+
+1. Open Chrome and go to `chrome://extensions/`
+2. Enable "Developer mode" by toggling the switch in the top right corner.
+3. Click "Load unpacked" and select the `app` directory created by the build process.
+
+Additionally, install the corresponding Emacs package from [this fork](https://github.com/KarimAziev/atomic-chrome) which contains improvements and updates.
 
 ## Usage
 
-Atom needs to be running for this to work.
+Ensure that Emacs is running with the `atomic-chrome` package loaded.
 
-1. Focus a textarea or a contenteditable element
-2. Press the icon of Atomic Chrome (or the shortcut).
+1. Focus on a textarea or a contenteditable element in Chrome.
+2. Activate Atomic Chrome. This can typically be done by clicking on the extension's icon or using a keyboard shortcut.
 
-Note that the tab will open in the first launched instance of Atom.
+The text will now open in an Emacs buffer, ready for you to edit.
 
-### How do I bind a shortcut
+### How do I bind a shortcut?
 
-1. Navigate to `chrome://extensions`
-2. Scroll to the bottom of the page
-3. Press 'Keyboard shortcuts'
-4. Set a shortcut for Atomic Chrome
+1. Navigate to `chrome://extensions`.
+2. Scroll down and click 'Keyboard shortcuts' at the bottom of the page.
+3. Assign a shortcut for activating Atomic Chrome.
 
 ## Development
 
-This repository is for the Chrome plugin development.
-For the Atom package development, see https://github.com/tuvistavie/atomic-chrome-atom.
-Contributions are welcome.
+This repository is dedicated to the Chrome extension development. For improvements to the Emacs integration and package, visit [the associated GitHub repository](https://github.com/KarimAziev/atomic-chrome).
+
+Your contributions to both the Chrome extension and the Emacs package are welcome!
