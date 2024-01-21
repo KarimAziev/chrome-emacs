@@ -1,7 +1,9 @@
 import BaseHandler from './base';
 
 class TextareaHandler extends BaseHandler {
-  setValue(value) {
+  elem: HTMLTextAreaElement;
+
+  setValue(value: string) {
     this.elem.value = value;
     var event = new Event('input', {
       bubbles: true,
@@ -14,10 +16,12 @@ class TextareaHandler extends BaseHandler {
   getValue() {
     return Promise.resolve(this.elem.value);
   }
+  static canHandle(elem: HTMLTextAreaElement) {
+    if (!elem.tagName) {
+      return false;
+    }
+    return elem.tagName.toLowerCase() === 'textarea';
+  }
 }
-
-TextareaHandler.canHandle = function (elem) {
-  return elem.tagName && elem.tagName.toLowerCase() === 'textarea';
-};
 
 export default TextareaHandler;

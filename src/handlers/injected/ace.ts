@@ -1,23 +1,37 @@
 import BaseInjectedHandler from './base';
 
+interface AceMode {
+  mode: string;
+  extensions: string;
+}
 class InjectedAceHandler extends BaseInjectedHandler {
-  constructor(elem, uuid) {
+  constructor(elem: HTMLElement, uuid: string) {
     super(elem, uuid);
     this.silenced = false;
   }
+  editor: ReturnType<typeof ace.edit>;
+  modes: AceMode[];
+  loaded: boolean;
 
   load() {
-    return new Promise((resolve) => {
-      this.editor = ace.edit(this.elem.parentElement);
+    return new Promise<void>((resolve) => {
+      if (this.elem.parentElement) {
+        this.editor = ace.edit(this.elem.parentElement);
+      }
+
       this.editor.$blockScrolling = Infinity;
-      if (!ace.config || !ace.config.loadModule) {
+      if (!(ace as any).config || !(ace as any).config.loadModule) {
         return resolve();
       }
-      ace.config.loadModule('ace/ext/modelist', (m) => {
-        this.modes = m.modes;
-        this.loaded = true;
-        resolve();
-      });
+
+      (ace as any).config.loadModule(
+        'ace/ext/modelist',
+        (m: { modes: AceMode[] }) => {
+          this.modes = m.modes;
+          this.loaded = true;
+          resolve();
+        },
+      );
       // NOTE: no callback when loadModule fails, so add a timeout
       setTimeout(() => {
         if (!this.loaded) {
@@ -32,7 +46,8 @@ class InjectedAceHandler extends BaseInjectedHandler {
       return null;
     }
     const session = this.editor.getSession();
-    const currentMode = session && session.getMode() && session.getMode().$id;
+    const currentMode =
+      session && session.getMode() && (session.getMode() as any).$id;
     if (!currentMode) {
       return null;
     }
@@ -48,15 +63,15 @@ class InjectedAceHandler extends BaseInjectedHandler {
     return this.editor.getValue();
   }
 
-  setValue(text) {
+  setValue(text: string) {
     this.executeSilenced(() => this.editor.setValue(text, 1));
   }
 
-  bindChange(f) {
+  bindChange(f: (...args: any[]) => void) {
     this.editor.on('change', this.wrapSilence(f));
   }
 
-  unbindChange(f) {
+  unbindChange(f: (...args: any[]) => void) {
     this.editor.off('change', f);
   }
 }

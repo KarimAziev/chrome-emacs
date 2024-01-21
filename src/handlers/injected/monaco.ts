@@ -1,6 +1,10 @@
 import BaseInjectedHandler from './base';
 
-const langsMappings = {
+declare global {
+  const monaco: typeof import('monaco-editor');
+}
+
+const langsMappings: Record<string, string[] | null> = {
   YAML: ['.yaml', '.yml'],
   yaml: ['.yaml', '.yml'],
   YML: ['.yaml', '.yml'],
@@ -347,40 +351,53 @@ const langsMappings = {
 };
 
 class InjectedMonacoHandler extends BaseInjectedHandler {
-  constructor(elem, uuid) {
+  constructor(elem: HTMLElement, uuid: string) {
     super(elem, uuid);
     this.silenced = false;
   }
 
+  editor: typeof monaco.editor;
+
   load() {
-    return new Promise((resolve) => {
+    return new Promise<void>((resolve) => {
       this.editor = monaco.editor;
 
       return resolve();
     });
   }
 
-  setValue(value) {
+  setValue(value: string) {
     const editor = this.editor.getModels()[0];
     editor.setValue(value);
+
+    if (this.elem) {
+      (this.elem as Element).scrollIntoView();
+    }
   }
 
   getValue() {
     const model = this.editor.getModels()[0];
-    if (model) {
-      const value = model.getValue();
-      return value;
-    }
+    const value = model.getValue();
+    return value;
   }
 
   getExtension() {
     const model = this.editor.getModels()[0];
-    if (model) {
-      const spec = model.getLanguageIdentifier();
-      const language = spec && spec.language;
+    const language = model.getLanguageId
+      ? model.getLanguageId()
+      : (
+          model as unknown as {
+            getLanguageIdentifier: () => { language: string };
+          }
+        ).getLanguageIdentifier
+      ? (
+          model as unknown as {
+            getLanguageIdentifier: () => { language: string };
+          }
+        ).getLanguageIdentifier().language
+      : null;
 
-      return language && langsMappings[language];
-    }
+    return language && langsMappings[language];
   }
 
   bindChange() {}

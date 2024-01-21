@@ -1,8 +1,9 @@
 import { injectedHandlerFactory } from './handlers/injected';
+import type { HandlerClass } from './handlers/injected/factory';
 
-const handlers = [];
+const handlers: HandlerClass[] = [];
 
-function isSourceTrusted(source) {
+function isSourceTrusted(source: MessageEvent['source']) {
   let win;
   for (win = window; win !== window.parent; win = window.parent) {
     if (source === window) {
@@ -12,7 +13,10 @@ function isSourceTrusted(source) {
   return win === source;
 }
 
-window.addEventListener('message', function (message) {
+window.addEventListener('message', function (message: MessageEvent) {
+  if (!message) {
+    return;
+  }
   if (!isSourceTrusted(message.source)) {
     return;
   }
@@ -31,7 +35,7 @@ window.addEventListener('message', function (message) {
     });
   } else {
     for (const handler of handlers) {
-      handler.handleMessage(message.data);
+      (handler as any).handleMessage(message.data);
     }
   }
 });

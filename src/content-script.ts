@@ -5,8 +5,10 @@ import {
   elementNormalizer,
 } from './content-script-tools';
 
-let lastNode;
-let styleBackup;
+import type { HandlerConstructor } from './handlers/factory';
+
+let lastNode: Element | null;
+let styleBackup: string | null;
 let textareas;
 
 function cleanupHighlight() {
@@ -19,21 +21,21 @@ function cleanupHighlight() {
     styleBackup = null;
   }
 }
-function highlightElement(node) {
+function highlightElement(node: Element) {
   cleanupHighlight();
   if (!node) {
     return;
   }
 
   lastNode = typeof node.getAttribute === 'function' ? node : null;
-  styleBackup = lastNode.getAttribute('style');
 
   if (lastNode) {
+    styleBackup = lastNode.getAttribute('style');
     let styles = styleBackup
       ? `outline: 1px dashed red; ${styleBackup}`
       : 'outline: 1px dashed red';
     lastNode.setAttribute('style', styles);
-    lastNode.scrollIntoViewIfNeeded();
+    lastNode.scrollIntoView();
   }
 }
 
@@ -42,36 +44,40 @@ function findTextAreas() {
   if (textareas) {
     for (let idx = 0; idx < textareas.length; idx++) {
       const el = textareas[idx];
-      el.addEventListener('focusin', (event) => {
-        highlightElement(event.target);
+      el.addEventListener('focusin', function () {
+        highlightElement(this);
       });
       el.addEventListener('focusout', (_event) => {
-        highlightElement();
+        cleanupHighlight();
       });
     }
   }
   return textareas;
 }
 
-function getHandler(elem) {
+function getHandler(elem: Element | null) {
   if (!elem) {
     return;
   }
+
   const activeElement = elementNormalizer.normalize(elem);
+
   const Handler = handlerFactory.handlerFor(activeElement);
+
   if (!Handler && activeElement && activeElement.tagName) {
     const elemName = activeElement.tagName.toLowerCase();
-    console.log('elemName:', elemName);
     console.error(`Atomic Chrome does not support <${elemName}> (yet?)`);
     return;
   }
-
-  return new Handler(activeElement, contentEvents);
+  if (Handler) {
+    return new Handler(activeElement, contentEvents);
+  }
 }
 
 function init() {
   let el = document.activeElement;
-  let handler = getHandler(el);
+
+  let handler: HandlerConstructor = getHandler(el);
 
   if (!handler) {
     const textAreas = findTextAreas();
@@ -83,8 +89,8 @@ function init() {
     handler = getHandler(elem);
   }
 
-  if (handler) {
-    handler.load().then((options) => {
+  if (handler && handler.load) {
+    handler.load().then((options: { extension?: string | string[] }) => {
       textSyncer.linkElem(document.URL, document.title, handler, options);
     });
   }

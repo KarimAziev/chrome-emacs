@@ -1,10 +1,12 @@
 import InjectorHandler from './injector';
+import type { ContentEventsBinder } from './injector';
 
 class MonacoHandler extends InjectorHandler {
-  constructor(elem, contentEvents) {
+  constructor(elem: HTMLTextAreaElement, contentEvents: ContentEventsBinder) {
     super(elem, contentEvents, 'monaco');
   }
-  setValue(value) {
+  elem: HTMLTextAreaElement;
+  setValue(value: string) {
     this.elem.value = value;
 
     var event = new Event('input', {
@@ -20,15 +22,12 @@ class MonacoHandler extends InjectorHandler {
     const value = super.getValue();
     return Promise.resolve(value);
   }
+  static canHandle(elem: HTMLTextAreaElement) {
+    return (
+      elem.tagName.toLowerCase() === 'textarea' &&
+      elem.classList.contains('monaco-mouse-cursor-text')
+    );
+  }
 }
-
-MonacoHandler.canHandle = function (elem) {
-  const result =
-    elem.tagName &&
-    elem.tagName.toLowerCase() === 'textarea' &&
-    elem.classList.contains('monaco-mouse-cursor-text');
-
-  return result;
-};
 
 export default MonacoHandler;

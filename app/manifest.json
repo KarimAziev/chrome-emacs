@@ -1,8 +1,9 @@
 {
   "name": "__MSG_appName__",
   "short_name": "__MSG_appShortName__",
-  "version": "0.2.8",
-  "manifest_version": 2,
+  "version": "0.3.0",
+  "manifest_version": 3,
+  "minimum_chrome_version": "116",
   "description": "__MSG_appDescription__",
   "icons": {
     "16": "images/icon-16.png",
@@ -10,24 +11,21 @@
   },
   "default_locale": "en",
   "background": {
-    "scripts": [
-      "scripts/background.js"
-    ]
+    "service_worker": "scripts/service-worker.js"
   },
-  "web_accessible_resources": [
-    "scripts/injected.js"
-  ],
-  "permissions": [
-    "tabs",
-    "activeTab",
-    "http://*/*",
-    "https://*/*"
-  ],
-  "browser_action": {
+  "action": {
     "default_icon": {
       "19": "images/icon-19.png",
       "38": "images/icon-38.png"
     },
     "default_title": "Atomic Chrome"
-  }
+  },
+  "permissions": ["tabs", "activeTab", "scripting"],
+  "host_permissions": ["http://*/*", "https://*/*"],
+  "web_accessible_resources": [
+    {
+      "resources": ["scripts/injected.js"],
+      "matches": ["http://*/*", "https://*/*"]
+    }
+  ]
 }

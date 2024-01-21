@@ -1,6 +1,23 @@
 const WS_PORT = 64292;
 const WS_URL = `ws://localhost:${WS_PORT}`;
 
+let webSocket = null;
+
+// TODO: move `keepAlive` to `WSBridge`
+function keepAlive() {
+  const keepAliveIntervalId = setInterval(
+    () => {
+      if (webSocket) {
+        webSocket.send(JSON.stringify({ type: 'keepalive' }));
+      } else {
+        clearInterval(keepAliveIntervalId);
+      }
+    },
+    // Set the interval to 20 seconds to prevent the service worker from becoming inactive.
+    20 * 1000,
+  );
+}
+
 class WSBridge {
   openConnection(port) {
     const queue = [];
@@ -11,7 +28,9 @@ class WSBridge {
 
   makeWS(port, queue) {
     const ws = new WebSocket(WS_URL);
+    webSocket = ws;
     ws.onopen = () => {
+      keepAlive();
       while (queue.length > 0) {
         ws.send(queue.shift());
       }
@@ -25,6 +44,7 @@ class WSBridge {
         payload: { code: evt.code, reason: evt.reason },
       });
       port.disconnect();
+      webSocket = null;
     };
     return ws;
   }
@@ -37,6 +57,13 @@ class WSBridge {
       ws.send(msg);
     }
   }
+}
+
+function disconnect() {
+  if (webSocket == null) {
+    return;
+  }
+  webSocket.close();
 }
 
 export default new WSBridge();
