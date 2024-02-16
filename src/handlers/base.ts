@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { IHandler, IContentEventsBinder } from './types';
+import { IHandler, IContentEventsBinder } from '@/handlers/types';
 
 export default class BaseHandler extends EventEmitter implements IHandler {
   protected document: Document;

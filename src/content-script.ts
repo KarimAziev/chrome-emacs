@@ -2,10 +2,10 @@ import {
   contentEvents,
   elementNormalizer,
   textSyncer,
-} from './content-script-tools';
-import { handlerFactory } from './handlers';
-import { IHandler, Options } from './handlers/types';
-import { findAndFocusBiggestTextArea } from './util/dom';
+} from '@/content-script-tools';
+import { handlerFactory } from '@/handlers';
+import { IHandler, Options } from '@/handlers/types';
+import { findAndFocusBiggestTextArea } from '@/util/dom';
 
 function getHandler(elem: Element | null) {
   if (!elem) {

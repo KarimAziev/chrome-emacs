@@ -1,4 +1,4 @@
-import { htmlEscape } from '../../util/string';
+import { htmlEscape } from '@/util/string';
 
 export default {
   url: new RegExp('https://workflowy.com.*', 'i'),

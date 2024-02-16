@@ -1,6 +1,6 @@
-import BaseInjectedHandler from './base';
-import { findAncestorWithClass } from '../../util/dom';
 import { editor } from 'monaco-editor';
+import BaseInjectedHandler from '@/handlers/injected/base';
+import { findAncestorWithClass } from '@/util/dom';
 
 declare global {
   const monaco: typeof import('monaco-editor');
@@ -432,15 +432,7 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
         langsMappings[
           typeof language === 'string' ? language : language.language
         ];
-      console.log(
-        '%c<getExtension monaco.ts 437>         language: %o :\n',
-        'background-color: #ffdab9; color: black',
-        language,
-        'extension',
-        extension,
-        'document',
-        document.baseURI,
-      );
+
       return extension;
     } else {
       return null;

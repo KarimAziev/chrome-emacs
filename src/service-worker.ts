@@ -1,4 +1,4 @@
-import { wsBridge } from './background-tools';
+import { wsBridge } from '@/background-tools';
 
 chrome.action.onClicked.addListener((tab) => {
   if (tab.id) {

@@ -1,5 +1,5 @@
-import InjectorHandler from './injector';
-import type { IContentEventsBinder } from './injector';
+import InjectorHandler from '@/handlers/injector';
+import type { IContentEventsBinder } from '@/handlers/injector';
 
 const aceClassName = 'ace_text-input';
 

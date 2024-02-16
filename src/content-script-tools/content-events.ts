@@ -1,4 +1,4 @@
-import events from './custom-events';
+import events from '@/content-script-tools/custom-events';
 
 export default {
   bind: (target: any, window: Window) => {

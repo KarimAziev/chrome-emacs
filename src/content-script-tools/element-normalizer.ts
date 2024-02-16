@@ -1,4 +1,4 @@
-import { capitalize } from '../util/string';
+import { capitalize } from '@/util/string';
 
 interface ElementWithTagName {
   tagName?: string;

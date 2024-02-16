@@ -1,5 +1,5 @@
-import { injectedHandlerFactory } from './handlers/injected';
-import type { IInjectedHandler } from './handlers/injected/types';
+import { injectedHandlerFactory } from '@/handlers/injected';
+import type { IInjectedHandler } from '@/handlers/injected/types';
 
 const handlers: IInjectedHandler[] = [];
 

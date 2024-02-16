@@ -1,4 +1,4 @@
-import type { IHandler, Options } from '../handlers/types';
+import type { IHandler, Options } from '@/handlers/types';
 
 const NORMAL_CLOSE_CODE = 1000;
 
@@ -54,11 +54,7 @@ class TextSyncer {
     options?: { extension?: string | string[] },
   ) {
     options = options || {};
-    console.log(
-      '%c<register text-syncer.ts 60>       handler: %o :\n',
-      'background-color: #daa520; color: white',
-      handler,
-    );
+
     handler.getValue().then((text: string) => {
       const payload: any = { url: url, title: title, text: text };
 
@@ -77,11 +73,6 @@ class TextSyncer {
   }
 
   post(port: chrome.runtime.Port, type: string, payload: any) {
-    console.log(
-      '%c<post TEXT-SYNCER.ts 78>       payload: %o :\n',
-      'background-color: #ffd700; color: black',
-      payload,
-    );
     return port.postMessage({ type: type, payload: payload });
   }
 }

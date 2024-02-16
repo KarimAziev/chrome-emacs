@@ -1,4 +1,4 @@
-import { IInjectedHandler } from './types';
+import { IInjectedHandler } from '@/handlers/injected/types';
 
 export type HandlerConstructor = new (
   elem: HTMLElement,

@@ -1,16 +1,5 @@
-import BaseHandler from './base';
-
-function escapeHTML(s: string) {
-  if (!s) {
-    return s;
-  }
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
+import BaseHandler from '@/handlers/base';
+import { htmlEscape } from '@/util/string';
 
 class ContentEditableHandler extends BaseHandler {
   getValue() {
@@ -55,7 +44,7 @@ class ContentEditableHandler extends BaseHandler {
         if (v.trim().length === 0) {
           return '<br>';
         }
-        return '<div>' + escapeHTML(v) + '</div>';
+        return '<div>' + htmlEscape(v) + '</div>';
       })
       .join('');
     this.elem.innerHTML = htmlValue;

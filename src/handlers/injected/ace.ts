@@ -1,4 +1,4 @@
-import BaseInjectedHandler from './base';
+import BaseInjectedHandler from '@/handlers/injected/base';
 
 interface AceMode {
   mode: string;

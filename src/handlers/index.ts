@@ -1,10 +1,9 @@
-import CodeMirrorHandler from './codemirror';
-import AceHandler from './ace';
-import ContentEditableHandler from './content-editable';
-import TextareaHandler from './textarea';
-
-import handlerFactory from './factory';
-import MonacoHandler from './monaco';
+import CodeMirrorHandler from '@/handlers/codemirror';
+import AceHandler from '@/handlers/ace';
+import ContentEditableHandler from '@/handlers/content-editable';
+import TextareaHandler from '@/handlers/textarea';
+import handlerFactory from '@/handlers/factory';
+import MonacoHandler from '@/handlers/monaco';
 
 handlerFactory.registerHandler(CodeMirrorHandler);
 handlerFactory.registerHandler(AceHandler);

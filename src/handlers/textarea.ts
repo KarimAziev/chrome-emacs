@@ -1,4 +1,4 @@
-import BaseHandler from './base';
+import BaseHandler from '@/handlers/base';
 
 class TextareaHandler extends BaseHandler {
   elem: HTMLTextAreaElement;

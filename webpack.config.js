@@ -14,6 +14,7 @@ module.exports = {
     filename: '[name].js',
     path: path.resolve(__dirname, 'app/scripts'),
   },
+  mode: 'production',
   module: {
     rules: [
       { test: /\.([cm]?ts|tsx)$/, loader: 'ts-loader' },
@@ -40,7 +41,7 @@ module.exports = {
   resolve: {
     extensions: ['.js', '.jsx', '.ts', '.tsx'],
     alias: {
-      'ac-util': path.join(__dirname, 'src', 'util'),
+      '@': path.join(__dirname, 'src'),
       'dummy-codemirror': path.join(__dirname, 'src', 'shims', 'codemirror'),
     },
   },
