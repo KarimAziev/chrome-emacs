@@ -1,58 +1,11 @@
-import { handlerFactory } from './handlers';
 import {
-  textSyncer,
   contentEvents,
   elementNormalizer,
+  textSyncer,
 } from './content-script-tools';
+import { handlerFactory } from './handlers';
 import { IHandler, Options } from './handlers/types';
-
-let lastNode: Element | null;
-let styleBackup: string | null;
-let textareas;
-
-function cleanupHighlight() {
-  if (lastNode) {
-    lastNode.removeAttribute('style');
-    if (styleBackup) {
-      lastNode.setAttribute('style', styleBackup);
-    }
-    lastNode = null;
-    styleBackup = null;
-  }
-}
-function highlightElement(node: Element) {
-  cleanupHighlight();
-  if (!node) {
-    return;
-  }
-
-  lastNode = typeof node.getAttribute === 'function' ? node : null;
-
-  if (lastNode) {
-    styleBackup = lastNode.getAttribute('style');
-    let styles = styleBackup
-      ? `outline: 1px dashed red; ${styleBackup}`
-      : 'outline: 1px dashed red';
-    lastNode.setAttribute('style', styles);
-    lastNode.scrollIntoView();
-  }
-}
-
-function findTextAreas() {
-  textareas = document.getElementsByTagName('textarea');
-  if (textareas) {
-    for (let idx = 0; idx < textareas.length; idx++) {
-      const el = textareas[idx];
-      el.addEventListener('focusin', function () {
-        highlightElement(this);
-      });
-      el.addEventListener('focusout', (_event) => {
-        cleanupHighlight();
-      });
-    }
-  }
-  return textareas;
-}
+import { findAndFocusBiggestTextArea } from './util/dom';
 
 function getHandler(elem: Element | null) {
   if (!elem) {
@@ -68,37 +21,23 @@ function getHandler(elem: Element | null) {
     console.error(`Atomic Chrome does not support <${elemName}> (yet?)`);
     return;
   }
-  if (Handler) {
-    return new Handler(activeElement, contentEvents);
-  }
-  return null;
+
+  return Handler ? new Handler(activeElement, contentEvents) : null;
 }
 
 function init() {
-  let el = document.activeElement;
+  const handler =
+    getHandler(document.activeElement) ||
+    getHandler(findAndFocusBiggestTextArea());
 
-  let handler = getHandler(el);
-
-  if (!handler) {
-    const textAreas = findTextAreas();
-    let elem = textAreas && textAreas[0];
-
-    if (elem && elem.focus) {
-      elem.focus();
-    }
-    handler = getHandler(elem);
-  }
-
-  if (handler && handler.load) {
-    handler.load().then((options) => {
-      textSyncer.linkElem(
-        document.URL,
-        document.title,
-        handler as unknown as IHandler,
-        options as unknown as Options,
-      );
-    });
-  }
+  handler?.load().then((options) => {
+    textSyncer.linkElem(
+      document.URL,
+      document.title,
+      handler as unknown as IHandler,
+      options as unknown as Options,
+    );
+  });
 }
 
 init();
