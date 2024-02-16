@@ -1,18 +1,16 @@
 import { EventEmitter } from 'events';
+import { IHandler, IContentEventsBinder } from './types';
 
-export interface ContentEventsBinder {
-  bind(context: BaseHandler, window: Window): void;
-}
-
-export default class BaseHandler extends EventEmitter {
+export default class BaseHandler extends EventEmitter implements IHandler {
   protected document: Document;
   protected window: Window | null;
   protected elem: HTMLElement;
 
-  constructor(elem: HTMLElement, contentEvents: ContentEventsBinder) {
+  constructor(elem: HTMLElement, contentEvents: IContentEventsBinder) {
     super();
-    if (!elem.ownerDocument)
+    if (!elem.ownerDocument) {
       throw new Error('The element must be within a document');
+    }
     this.document = elem.ownerDocument;
     this.window = this.document.defaultView;
     this.elem = elem;
@@ -27,8 +25,11 @@ export default class BaseHandler extends EventEmitter {
     this.emit('valueSet', value, options || {});
   }
 
-  getValue() {
-    throw new Error('not implemented');
+  // Ensure this method is declared to return a Promise<string> to match the IHandler interface
+  getValue(): Promise<string> {
+    // Placeholder implementation, should be overridden in subclasses
+    // This ensures the method signature matches the IHandler interface
+    return Promise.reject('Method not implemented.');
   }
 
   bindChange(f: (event: Event) => void): void {

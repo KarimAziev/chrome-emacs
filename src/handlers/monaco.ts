@@ -1,8 +1,8 @@
 import InjectorHandler from './injector';
-import type { ContentEventsBinder } from './injector';
+import type { IContentEventsBinder } from './injector';
 
 class MonacoHandler extends InjectorHandler {
-  constructor(elem: HTMLTextAreaElement, contentEvents: ContentEventsBinder) {
+  constructor(elem: HTMLTextAreaElement, contentEvents: IContentEventsBinder) {
     super(elem, contentEvents, 'monaco');
   }
   elem: HTMLTextAreaElement;
@@ -22,6 +22,7 @@ class MonacoHandler extends InjectorHandler {
     const value = super.getValue();
     return Promise.resolve(value);
   }
+
   static canHandle(elem: HTMLTextAreaElement) {
     return (
       elem.tagName.toLowerCase() === 'textarea' &&

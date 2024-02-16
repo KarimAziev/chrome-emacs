@@ -1,4 +1,6 @@
 import BaseInjectedHandler from './base';
+import { findAncestorWithClass } from '../../util/dom';
+import { editor } from 'monaco-editor';
 
 declare global {
   const monaco: typeof import('monaco-editor');
@@ -350,54 +352,99 @@ const langsMappings: Record<string, string[] | null> = {
   ABAP: ['.abap'],
 };
 
-class InjectedMonacoHandler extends BaseInjectedHandler {
-  constructor(elem: HTMLElement, uuid: string) {
+interface ExtendedModel extends editor.ITextModel {
+  getLanguageIdentifier: () => { language: string };
+}
+
+class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
+  constructor(elem: HTMLTextAreaElement, uuid: string) {
     super(elem, uuid);
     this.silenced = false;
   }
 
-  editor: typeof monaco.editor;
+  editor?: typeof monaco.editor;
+
+  getModel() {
+    const models = this.editor?.getModels();
+    if (!models) {
+      return;
+    }
+    const model =
+      (models && models?.find((m) => (m.getValue() || '').length > 0)) ||
+      models[0];
+    return model as unknown as ExtendedModel;
+  }
 
   load() {
     return new Promise<void>((resolve) => {
-      this.editor = monaco.editor;
-
-      return resolve();
+      try {
+        if (typeof monaco !== 'undefined' && monaco.editor) {
+          this.editor = monaco.editor;
+        }
+      } catch (error) {
+        throw new Error('Monaco editor is not available.');
+      } finally {
+        return resolve();
+      }
     });
   }
 
   setValue(value: string) {
-    const editor = this.editor.getModels()[0];
-    editor.setValue(value);
+    const editor = this.getModel();
+    if (editor) {
+      editor.setValue(value);
+    } else if (this.elem) {
+      this.elem.value = value;
+    }
 
     if (this.elem) {
-      (this.elem as Element).scrollIntoView();
+      this.elem.scrollIntoView();
     }
   }
 
   getValue() {
-    const model = this.editor.getModels()[0];
-    const value = model.getValue();
-    return value;
+    const editor = this.getModel();
+
+    if (editor) {
+      const value = editor.getValue();
+      return value;
+    } else {
+      const parent =
+        (this.elem && findAncestorWithClass(this.elem, 'editor-instance')) ||
+        findAncestorWithClass(this.elem, 'monaco-editor');
+      if (parent) {
+        return parent.textContent || '';
+      } else {
+        // Fallback logic if monaco is not available
+        return this.elem ? (this.elem as HTMLTextAreaElement).value : '';
+      }
+    }
   }
 
   getExtension() {
-    const model = this.editor.getModels()[0];
-    const language = model.getLanguageId
-      ? model.getLanguageId()
-      : (
-          model as unknown as {
-            getLanguageIdentifier: () => { language: string };
-          }
-        ).getLanguageIdentifier
-      ? (
-          model as unknown as {
-            getLanguageIdentifier: () => { language: string };
-          }
-        ).getLanguageIdentifier().language
-      : null;
-
-    return language && langsMappings[language];
+    const model = this.getModel();
+    if (model) {
+      const language =
+        (model.getLanguageId && model.getLanguageId()) ||
+        (model.getLanguageIdentifier && model.getLanguageIdentifier());
+      const extension =
+        language &&
+        langsMappings[
+          typeof language === 'string' ? language : language.language
+        ];
+      console.log(
+        '%c<getExtension monaco.ts 437>         language: %o :\n',
+        'background-color: #ffdab9; color: black',
+        language,
+        'extension',
+        extension,
+        'document',
+        document.baseURI,
+      );
+      return extension;
+    } else {
+      return null;
+    }
   }
 
   bindChange() {}

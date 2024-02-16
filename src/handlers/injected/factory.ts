@@ -1,17 +1,18 @@
-export type HandlerClass = new (...args: any[]) => any;
+import { IInjectedHandler } from './types';
+
+export type HandlerConstructor = new (
+  elem: HTMLElement,
+  uuid: string,
+) => IInjectedHandler;
 
 class InjectedHandlerFactory {
-  private handlers: Record<string, HandlerClass>;
+  private handlers: Record<string, HandlerConstructor> = {};
 
-  constructor() {
-    this.handlers = {};
-  }
-
-  registerHandler(name: string, klass: HandlerClass): void {
+  registerHandler(name: string, klass: HandlerConstructor): void {
     this.handlers[name] = klass;
   }
 
-  getHandler(name: string): HandlerClass | undefined {
+  getHandler(name: string): HandlerConstructor | undefined {
     return this.handlers[name];
   }
 }

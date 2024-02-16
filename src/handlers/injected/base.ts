@@ -1,38 +1,39 @@
-export default class BaseInjectedHandler {
-  elem: HTMLElement;
+export default class BaseInjectedHandler<Elem extends Element> {
+  elem: Elem;
   uuid: string;
   silenced: boolean = false;
 
-  constructor(elem: HTMLElement, uuid: string) {
+  constructor(elem: Elem, uuid: string) {
     this.elem = elem;
     this.uuid = uuid;
   }
 
   async setup(): Promise<void> {
-    return this.load().then((res: void) => {
-      this.bindChange(() => this.postToInjector('change'));
-      return res;
-    });
+    await this.load();
+    this.bindChange(() => this.postToInjector('change'));
   }
 
-  load(): Promise<void> {
-    return Promise.resolve();
-  }
+  async load(): Promise<void> {}
 
-  handleMessage(data: { type: string; uuid: string; payload: any }): void {
-    const methodName = `on${
-      data.type.charAt(0).toUpperCase() + data.type.slice(1)
-    }` as keyof this;
-    if (
-      data.uuid === this.uuid &&
-      typeof (this as any)[methodName] === 'function'
-    ) {
-      (this as any)[methodName](data.payload);
+  handleMessage(data: { type: string; uuid: string; payload: unknown }): void {
+    if (data && data.type) {
+      const methodName = `on${
+        data.type.charAt(0).toUpperCase() + data.type.slice(1)
+      }` as keyof this;
+
+      if (
+        data.uuid === this.uuid &&
+        typeof (this as any)[methodName] === 'function'
+      ) {
+        (this as any)[methodName](data.payload);
+      }
     }
   }
 
   onGetValue(): void {
-    this.postToInjector('value', { text: this.getValue() });
+    this.postToInjector('value', {
+      text: this.getValue(),
+    });
   }
 
   onSetValue(payload: { text: string }): void {
@@ -43,7 +44,7 @@ export default class BaseInjectedHandler {
     throw new Error('not implemented');
   }
 
-  setValue(_arg: string): void {
+  setValue(_value: string): void {
     throw new Error('not implemented');
   }
 
@@ -59,16 +60,17 @@ export default class BaseInjectedHandler {
 
   postReady(): void {
     const payload: any = {};
-    const extension: null | void | string | string[] = this.getExtension();
-    if (extension as unknown as string) {
+    const extension = this.getExtension();
+
+    if (extension) {
       payload.extension = extension;
     }
     this.postToInjector('ready', payload);
   }
 
-  getExtension() {}
+  getExtension(): string | string[] | null | void {}
 
-  wrapSilence(f: (...args: any[]) => void): (...args: any[]) => void {
+  wrapSilence(f: (...args: unknown[]) => void): (...args: unknown[]) => void {
     return (...args) => {
       if (!this.silenced) {
         f(...args);
@@ -76,7 +78,7 @@ export default class BaseInjectedHandler {
     };
   }
 
-  postToInjector(type: string, payload?: any): void {
+  postToInjector(type: string, payload?: unknown): void {
     const message = {
       type: type,
       uuid: this.uuid,

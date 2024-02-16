@@ -4,8 +4,7 @@ import {
   contentEvents,
   elementNormalizer,
 } from './content-script-tools';
-
-import type { HandlerConstructor } from './handlers/factory';
+import { IHandler, Options } from './handlers/types';
 
 let lastNode: Element | null;
 let styleBackup: string | null;
@@ -72,12 +71,13 @@ function getHandler(elem: Element | null) {
   if (Handler) {
     return new Handler(activeElement, contentEvents);
   }
+  return null;
 }
 
 function init() {
   let el = document.activeElement;
 
-  let handler: HandlerConstructor = getHandler(el);
+  let handler = getHandler(el);
 
   if (!handler) {
     const textAreas = findTextAreas();
@@ -90,8 +90,13 @@ function init() {
   }
 
   if (handler && handler.load) {
-    handler.load().then((options: { extension?: string | string[] }) => {
-      textSyncer.linkElem(document.URL, document.title, handler, options);
+    handler.load().then((options) => {
+      textSyncer.linkElem(
+        document.URL,
+        document.title,
+        handler as unknown as IHandler,
+        options as unknown as Options,
+      );
     });
   }
 }

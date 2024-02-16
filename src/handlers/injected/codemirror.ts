@@ -1,43 +1,53 @@
 import BaseInjectedHandler from './base';
 import 'codemirror/mode/meta';
-import CodeMirror from 'dummy-codemirror';
+
+import CodeMirror, { Editor } from 'codemirror';
 
 // NOTE: keep modes which could conflict or which do not resolve here
-const commonModes = {
+const commonModes: { [key: string]: string } = {
   css: 'css',
   htmlmixed: 'html',
   html: 'html',
-  javascript: 'js'
+  javascript: 'js',
 };
 
-class InjectedCodeMirrorHandler extends BaseInjectedHandler {
-  load() {
+declare global {
+  interface HTMLDivElement {
+    CodeMirror: Editor;
+  }
+}
+
+class InjectedCodeMirrorHandler extends BaseInjectedHandler<HTMLDivElement> {
+  editor!: Editor;
+
+  async load(): Promise<void> {
     while (!this.elem.classList.contains('CodeMirror')) {
-      this.elem = this.elem.parentElement;
+      if (!this.elem.parentElement) throw new Error('Parent element not found');
+      this.elem = this.elem.parentElement as HTMLDivElement;
     }
+
     this.editor = this.elem.CodeMirror;
-    return Promise.resolve();
   }
 
-  getValue() {
+  getValue(): string {
     return this.editor.getValue();
   }
 
-  setValue(text) {
+  setValue(text: string): void {
     this.executeSilenced(() => this.editor.setValue(text));
   }
 
-  bindChange(f) {
+  bindChange(f: () => void): void {
     this.editor.on('change', this.wrapSilence(f));
   }
 
-  unbindChange(f) {
+  unbindChange(f: () => void): void {
     this.editor.off('change', f);
   }
 
-  getExtension() {
+  getExtension(): string | null {
     const currentModeName = this.editor.getMode().name;
-    if (commonModes[currentModeName]) {
+    if (currentModeName && commonModes[currentModeName]) {
       return commonModes[currentModeName];
     }
     for (const mode of CodeMirror.modeInfo) {

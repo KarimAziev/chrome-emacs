@@ -1,28 +1,14 @@
-export type HandlerConstructor = {
-  new (...args: any[]): any;
-  canHandle: (elem: Element) => boolean;
-  load?: () => Promise<any>;
-  setValue?: (value: string) => {};
-};
+import { IHandlerConstructor } from './types';
 
 class HandlerFactory {
-  public handlers: HandlerConstructor[];
+  private handlers: IHandlerConstructor[] = [];
 
-  constructor() {
-    this.handlers = [];
-  }
-
-  registerHandler(handler: HandlerConstructor) {
+  registerHandler(handler: IHandlerConstructor): void {
     this.handlers.push(handler);
   }
 
-  handlerFor(elem: Element): HandlerConstructor | null {
-    for (const Handler of this.handlers) {
-      if (Handler.canHandle(elem)) {
-        return Handler;
-      }
-    }
-    return null;
+  handlerFor(elem: Element): IHandlerConstructor | null {
+    return this.handlers.find((handler) => handler.canHandle(elem)) || null;
   }
 }
 

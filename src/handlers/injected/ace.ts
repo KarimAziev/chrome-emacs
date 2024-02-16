@@ -4,9 +4,11 @@ interface AceMode {
   mode: string;
   extensions: string;
 }
-class InjectedAceHandler extends BaseInjectedHandler {
+
+class InjectedAceHandler extends BaseInjectedHandler<HTMLElement> {
   constructor(elem: HTMLElement, uuid: string) {
     super(elem, uuid);
+
     this.silenced = false;
   }
   editor: ReturnType<typeof ace.edit>;
@@ -20,24 +22,7 @@ class InjectedAceHandler extends BaseInjectedHandler {
       }
 
       this.editor.$blockScrolling = Infinity;
-      if (!(ace as any).config || !(ace as any).config.loadModule) {
-        return resolve();
-      }
-
-      (ace as any).config.loadModule(
-        'ace/ext/modelist',
-        (m: { modes: AceMode[] }) => {
-          this.modes = m.modes;
-          this.loaded = true;
-          resolve();
-        },
-      );
-      // NOTE: no callback when loadModule fails, so add a timeout
-      setTimeout(() => {
-        if (!this.loaded) {
-          resolve();
-        }
-      }, 3000);
+      return resolve();
     });
   }
 
@@ -64,10 +49,12 @@ class InjectedAceHandler extends BaseInjectedHandler {
   }
 
   setValue(text: string) {
+    // Property 'executeSilenced' does not exist on type 'InjectedAceHandler'
     this.executeSilenced(() => this.editor.setValue(text, 1));
   }
 
   bindChange(f: (...args: any[]) => void) {
+    // Property 'wrapSilence' does not exist on type 'InjectedAceHandler'
     this.editor.on('change', this.wrapSilence(f));
   }
 

@@ -1,8 +1,8 @@
 import InjectorHandler from './injector';
-import type { ContentEventsBinder } from './injector';
+import type { IContentEventsBinder } from './injector';
 
 class CodeMirrorHandler extends InjectorHandler {
-  constructor(elem: HTMLElement, contentEvents: ContentEventsBinder) {
+  constructor(elem: HTMLElement, contentEvents: IContentEventsBinder) {
     super(elem, contentEvents, 'codemirror');
   }
 

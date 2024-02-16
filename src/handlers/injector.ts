@@ -1,9 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import BaseHandler from './base';
-
-export interface ContentEventsBinder {
-  bind(context: BaseHandler, window: Window): void;
-}
+import { IContentEventsBinder } from './types';
 
 export default class InjectorHandler extends BaseHandler {
   private name: string;
@@ -12,7 +9,7 @@ export default class InjectorHandler extends BaseHandler {
 
   constructor(
     elem: HTMLElement,
-    contentEvents: ContentEventsBinder,
+    contentEvents: IContentEventsBinder,
     name: string,
   ) {
     super(elem, contentEvents);
@@ -32,12 +29,12 @@ export default class InjectorHandler extends BaseHandler {
     this._getValueCallback = null;
   }
 
-  async load(): Promise<void> {
+  async load() {
     this.injectScript(() =>
       this.postToInjected('initialize', { name: this.name }),
     );
 
-    await new Promise((resolve) => this.once('ready', resolve));
+    return await new Promise<void>((resolve) => this.once('ready', resolve));
   }
 
   setValue(value: string, options?: Record<string, unknown>): void {
@@ -45,16 +42,25 @@ export default class InjectorHandler extends BaseHandler {
     super.setValue(value, options);
   }
 
-  async getValue() {
+  async getValue(): Promise<string> {
     this.postToInjected('getValue');
 
-    return new Promise((resolve) => {
+    return new Promise<string>((resolve, reject) => {
       if (this._getValueCallback) {
         this.removeListener('value', this._getValueCallback);
       }
 
       this._getValueCallback = (payload: any) => {
-        resolve(payload.text);
+        // Assuming payload.text is always a string. If not, you should validate it or use type assertions.
+        if (typeof payload.text === 'string') {
+          resolve(payload.text);
+        } else {
+          reject(
+            new Error(
+              'Payload does not contain a text property of type string',
+            ),
+          );
+        }
         this._getValueCallback = null;
       };
 
@@ -108,3 +114,5 @@ export default class InjectorHandler extends BaseHandler {
     this.removeListener('change', f);
   }
 }
+
+export { IContentEventsBinder };

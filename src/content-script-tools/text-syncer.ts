@@ -1,13 +1,11 @@
-import type { HandlerConstructor } from '../handlers/factory';
+import type { IHandler, Options } from '../handlers/types';
 
 const NORMAL_CLOSE_CODE = 1000;
 
-export interface Options {
-  extension?: string | string[];
-}
 class TextSyncer {
-  linkElem(url: string, title: string, handler: any, options?: Options) {
+  linkElem(url: string, title: string, handler: IHandler, options?: Options) {
     const port = chrome.runtime.connect();
+
     this.register(port, url, title, handler, options);
 
     port.onMessage.addListener(this.makeMessageListener(handler));
@@ -18,7 +16,7 @@ class TextSyncer {
     });
   }
 
-  makeMessageListener(handler: HandlerConstructor) {
+  makeMessageListener(handler: IHandler) {
     return (msg: any) => {
       if ((this as any)[msg.type]) {
         return (this as any)[msg.type](handler, msg.payload);
@@ -27,7 +25,7 @@ class TextSyncer {
     };
   }
 
-  updateText(handler: HandlerConstructor, payload: { text: string }) {
+  updateText(handler: IHandler, payload: { text: string }) {
     if (handler.setValue) {
       handler.setValue(payload.text);
     }
@@ -40,7 +38,7 @@ class TextSyncer {
     }
   }
 
-  makeTextChangeListener(port: chrome.runtime.Port, handler: any) {
+  makeTextChangeListener(port: chrome.runtime.Port, handler: IHandler) {
     return () => {
       handler.getValue().then((text: string) => {
         this.post(port, 'updateText', { text: text });
@@ -52,12 +50,18 @@ class TextSyncer {
     port: chrome.runtime.Port,
     url: string,
     title: string,
-    handler: any,
+    handler: IHandler,
     options?: { extension?: string | string[] },
   ) {
     options = options || {};
+    console.log(
+      '%c<register text-syncer.ts 60>       handler: %o :\n',
+      'background-color: #daa520; color: white',
+      handler,
+    );
     handler.getValue().then((text: string) => {
       const payload: any = { url: url, title: title, text: text };
+
       let extension = options?.extension;
 
       if (extension) {
@@ -73,7 +77,12 @@ class TextSyncer {
   }
 
   post(port: chrome.runtime.Port, type: string, payload: any) {
-    port.postMessage({ type: type, payload: payload });
+    console.log(
+      '%c<post TEXT-SYNCER.ts 78>       payload: %o :\n',
+      'background-color: #ffd700; color: black',
+      payload,
+    );
+    return port.postMessage({ type: type, payload: payload });
   }
 }
 
