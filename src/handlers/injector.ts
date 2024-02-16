@@ -51,7 +51,6 @@ export default class InjectorHandler extends BaseHandler {
       }
 
       this._getValueCallback = (payload: any) => {
-        // Assuming payload.text is always a string. If not, you should validate it or use type assertions.
         if (typeof payload.text === 'string') {
           resolve(payload.text);
         } else {
