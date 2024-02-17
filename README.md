@@ -1,4 +1,4 @@
-# Atomic Chrome for Emacs
+# Chrome Emacs
 
 This fork of Atomic Chrome has been updated and improved with the following changes:
 
@@ -27,7 +27,7 @@ Additionally, install the corresponding Emacs package from [this fork](https://g
 Ensure that Emacs is running with the `atomic-chrome` package loaded.
 
 1. Focus on a textarea or a contenteditable element in Chrome.
-2. Activate Atomic Chrome. This can typically be done by clicking on the extension's icon or using a keyboard shortcut.
+2. Activate Chrome Emacs. This can typically be done by clicking on the extension's icon or using a keyboard shortcut.
 
 The text will now open in an Emacs buffer, ready for you to edit.
 
@@ -35,7 +35,7 @@ The text will now open in an Emacs buffer, ready for you to edit.
 
 1. Navigate to `chrome://extensions`.
 2. Scroll down and click 'Keyboard shortcuts' at the bottom of the page.
-3. Assign a shortcut for activating Atomic Chrome.
+3. Assign a shortcut for activating Chrome Emacs.
 
 ## Development
 

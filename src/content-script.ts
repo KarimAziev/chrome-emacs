@@ -18,7 +18,7 @@ function getHandler(elem: Element | null) {
 
   if (!Handler && activeElement && activeElement.tagName) {
     const elemName = activeElement.tagName.toLowerCase();
-    console.error(`Atomic Chrome does not support <${elemName}> (yet?)`);
+    console.error(`Chrome Emacs does not support <${elemName}> (yet?)`);
     return;
   }
 

@@ -1,5 +1,5 @@
 {
-  "name": "atomic-chrome",
+  "name": "chrome-emacs",
   "private": true,
   "devDependencies": {
     "@babel/core": "^7.15.5",

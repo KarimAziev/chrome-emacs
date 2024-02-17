@@ -21,7 +21,7 @@ class TextSyncer {
       if ((this as any)[msg.type]) {
         return (this as any)[msg.type](handler, msg.payload);
       }
-      console.warn('Atomic Chrome received unknown message:', msg);
+      console.warn('Chrome Emacs received unknown message:', msg);
     };
   }
 
@@ -34,7 +34,7 @@ class TextSyncer {
   closed(_handler: any, payload: { code: number; reason: string }) {
     const code = payload.code;
     if (code !== NORMAL_CLOSE_CODE) {
-      console.warn(`Atomic Chrome connection was closed with code ${code}`);
+      console.warn(`Chrome Emacs connection was closed with code ${code}`);
     }
   }
 

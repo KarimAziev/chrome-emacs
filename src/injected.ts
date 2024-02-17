@@ -26,7 +26,7 @@ window.addEventListener('message', function (message: MessageEvent) {
     const Handler = injectedHandlerFactory.getHandler(handlerName);
 
     if (!Handler) {
-      console.error(`Atomic Chrome received bad handler name: ${handlerName}`);
+      console.error(`Chrome Emacs received bad handler name: ${handlerName}`);
       return;
     }
 
