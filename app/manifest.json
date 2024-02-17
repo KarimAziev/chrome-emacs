@@ -1,7 +1,7 @@
 {
   "name": "__MSG_appName__",
   "short_name": "__MSG_appShortName__",
-  "version": "0.3.0",
+  "version": "0.1.0",
   "manifest_version": 3,
   "minimum_chrome_version": "116",
   "description": "__MSG_appDescription__",
@@ -20,7 +20,7 @@
     },
     "default_title": "Chrome Emacs"
   },
-  "permissions": ["tabs", "activeTab", "scripting"],
+  "permissions": ["activeTab", "scripting"],
   "host_permissions": ["http://*/*", "https://*/*"],
   "web_accessible_resources": [
     {
