@@ -3,6 +3,11 @@ import type { IInjectedHandler } from '@/handlers/injected/types';
 
 const handlers: IInjectedHandler[] = [];
 
+/**
+ * Determines if the source of a message is trusted by comparing it to the current and parent windows.
+ * @param source - The source window of the incoming message.
+ * @returns A boolean indicating if the source is trusted.
+ */
 function isSourceTrusted(source: MessageEvent['source']): boolean {
   let win: Window | null = window;
   while (win && win !== window.parent) {
@@ -14,6 +19,10 @@ function isSourceTrusted(source: MessageEvent['source']): boolean {
   return source === win;
 }
 
+/**
+ * Adds a listener to the window object that responds to message events.
+ * It filters messages based on their source and type, and creates handlers accordingly.
+ */
 window.addEventListener('message', function (message: MessageEvent) {
   if (!message) {
     return;

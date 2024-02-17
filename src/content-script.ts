@@ -7,6 +7,11 @@ import { handlerFactory } from '@/handlers';
 import { IHandler, Options } from '@/handlers/types';
 import { findAndFocusBiggestTextArea } from '@/util/dom';
 
+/**
+ * Retrieves an appropriate handler for the provided HTML Element.
+ * @param elem - The DOM element for which to get a handler, or null.
+ * @returns An instance of a handler for the element, or undefined if element is null or unsupported.
+ */
 function getHandler(elem: Element | null) {
   if (!elem) {
     return;
@@ -25,6 +30,10 @@ function getHandler(elem: Element | null) {
   return Handler ? new Handler(activeElement, contentEvents) : null;
 }
 
+/**
+ * Initializes the extension by attempting to find an appropriate handler for the
+ * current or largest text area and syncing text if successful.
+ */
 function init() {
   const handler =
     getHandler(document.activeElement) ||
