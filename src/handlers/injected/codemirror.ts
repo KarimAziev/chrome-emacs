@@ -1,15 +1,7 @@
 import BaseInjectedHandler from '@/handlers/injected/base';
 import 'codemirror/mode/meta';
-
 import CodeMirror, { Editor } from 'codemirror';
-
-// NOTE: keep modes which could conflict or which do not resolve here
-const commonModes: { [key: string]: string } = {
-  css: 'css',
-  htmlmixed: 'html',
-  html: 'html',
-  javascript: 'js',
-};
+import { fileExtensionsByLanguage } from '@/handlers/config/codemirror';
 
 declare global {
   interface HTMLDivElement {
@@ -47,8 +39,8 @@ class InjectedCodeMirrorHandler extends BaseInjectedHandler<HTMLDivElement> {
 
   getExtension(): string | null {
     const currentModeName = this.editor.getMode().name;
-    if (currentModeName && commonModes[currentModeName]) {
-      return commonModes[currentModeName];
+    if (currentModeName && fileExtensionsByLanguage[currentModeName]) {
+      return fileExtensionsByLanguage[currentModeName];
     }
     for (const mode of CodeMirror.modeInfo) {
       if (mode.mode === currentModeName && mode.ext) {
