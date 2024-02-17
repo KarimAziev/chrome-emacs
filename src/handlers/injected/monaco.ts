@@ -68,8 +68,12 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
       try {
         if (typeof window.monaco !== 'undefined' && window.monaco.editor) {
           this.editor = window.monaco.editor;
-          const editors = window.monaco.editor?.getEditors();
-          this.focusedEditor = editors?.find((e) => e?.hasTextFocus());
+          const editors =
+            isFunction(window.monaco.editor?.getEditors) &&
+            window.monaco.editor.getEditors();
+          this.focusedEditor = editors
+            ? editors?.find((e) => e?.hasTextFocus() && e.getValue())
+            : undefined;
           this.model = this.getModel();
         }
       } catch (error) {
@@ -123,7 +127,9 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
    * @returns The current value as a string.
    */
   getValue() {
-    if (this.model) {
+    if (this.focusedEditor) {
+      return this.focusedEditor.getValue();
+    } else if (this.model) {
       return this.model.getValue();
     } else if (!this.elem) {
       return '';
