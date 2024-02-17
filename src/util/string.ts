@@ -1,4 +1,4 @@
-export const isString = (v: any): v is string => typeof v === 'string';
+import { isString } from '@/util/guard';
 
 export const capitalize = <T>(s: T) =>
   isString(s) ? s[0].toUpperCase() + s.slice(1) : s;
