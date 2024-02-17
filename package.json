@@ -3,7 +3,7 @@
   "description": "A Chrome extension for editing text areas in Emacs",
   "repository": {
     "type": "git",
-    "url": "https://github.com/KarimAziev/atomic-chrome-1.git"
+    "url": "https://github.com/KarimAziev/chrome-emacs.git"
   },
   "private": true,
   "devDependencies": {
