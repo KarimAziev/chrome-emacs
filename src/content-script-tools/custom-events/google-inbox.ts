@@ -1,12 +1,13 @@
+import BaseHandler from '@/handlers/base';
 // Google Inbox custom events
 // removes label when start typing
 
 export default {
-  url: new RegExp('https://inbox\.google\.com.*', 'i'),
+  url: new RegExp('https://inbox.google.com.*', 'i'),
   // remove placeholder
-  bind: function (window) {
+  bind: function (this: BaseHandler) {
     const hideLabel = () => {
-      const label = this.elem.previousSibling;
+      const label = this.elem.previousSibling as HTMLElement;
       if (!label || !label.tagName || label.tagName.toLowerCase() !== 'label') {
         return;
       }
@@ -15,7 +16,8 @@ export default {
     };
 
     const handleValueSet = () => {
-      if (this.getValue()) {
+      const val = this.getValue();
+      if (val as unknown) {
         hideLabel();
       } else {
         this.once('valueSet', handleValueSet);
@@ -23,5 +25,5 @@ export default {
     };
 
     this.once('valueSet', handleValueSet);
-  }
+  },
 };

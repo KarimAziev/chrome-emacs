@@ -1,7 +1,8 @@
 import events from '@/content-script-tools/custom-events';
+import { IContentEventsBinder } from '@/handlers/types';
 
-export default {
-  bind: (target: any, window: Window) => {
+const contentEventsBinder: IContentEventsBinder = {
+  bind: (target, window) => {
     const origin = window.location.origin;
     for (const event of events) {
       if (origin.match(event.url)) {
@@ -10,3 +11,4 @@ export default {
     }
   },
 };
+export default contentEventsBinder;
