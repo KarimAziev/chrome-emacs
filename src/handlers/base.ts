@@ -1,5 +1,9 @@
 import { EventEmitter } from 'events';
-import { IHandler, IContentEventsBinder } from '@/handlers/types';
+import {
+  IHandler,
+  IContentEventsBinder,
+  UpdateTextPayload,
+} from '@/handlers/types';
 
 /**
  * Base handler class implementing `IHandler` interface.
@@ -37,7 +41,7 @@ export default class BaseHandler extends EventEmitter implements IHandler {
    * @param value - The value to set.
    * @param options - Optional parameters.
    */
-  setValue(value: string, options?: Record<string, unknown>): void {
+  setValue(value: string, options?: UpdateTextPayload): void {
     this.emit('valueSet', value, options || {});
   }
 

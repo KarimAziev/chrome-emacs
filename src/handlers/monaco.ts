@@ -1,5 +1,6 @@
 import InjectorHandler from '@/handlers/injector';
 import type { IContentEventsBinder } from '@/handlers/injector';
+import type { UpdateTextPayload } from '@/handlers/types';
 
 /**
  * A handler for interacting with Monaco editor instances specifically.
@@ -19,7 +20,7 @@ class MonacoHandler extends InjectorHandler {
    * the value to the injected script through the parent class method.
    * @param value - The text value to set in the managed textarea.
    */
-  setValue(value: string) {
+  setValue(value: string, options: UpdateTextPayload) {
     this.elem.value = value;
     // Creates a new input event indicating user input.
     const event = new Event('input', {
@@ -28,7 +29,7 @@ class MonacoHandler extends InjectorHandler {
     });
 
     this.elem.dispatchEvent(event);
-    super.setValue(value);
+    super.setValue(value, options);
   }
   /**
    * Retrieves the current value from the textarea through the parent class method.

@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import BaseHandler from '@/handlers/base';
-import { IContentEventsBinder } from '@/handlers/types';
+import { IContentEventsBinder, UpdateTextPayload } from '@/handlers/types';
 
 /**
  * A specialized handler extending BaseHandler for injecting and communicating with scripts.
@@ -55,8 +55,8 @@ export default class InjectorHandler extends BaseHandler {
    * @param value - The value to set.
    * @param options - Optional parameters.
    */
-  setValue(value: string, options?: Record<string, unknown>): void {
-    this.postToInjected('setValue', { text: value });
+  setValue(value: string, options?: UpdateTextPayload): void {
+    this.postToInjected('setValue', { text: value, ...options });
     super.setValue(value, options);
   }
 

@@ -1,4 +1,4 @@
-import type { IHandler, Options } from '@/handlers/types';
+import type { IHandler, Options, UpdateTextPayload } from '@/handlers/types';
 
 const NORMAL_CLOSE_CODE = 1000;
 
@@ -25,9 +25,9 @@ class TextSyncer {
     };
   }
 
-  updateText(handler: IHandler, payload: { text: string }) {
+  updateText(handler: IHandler, payload: UpdateTextPayload) {
     if (handler.setValue) {
-      handler.setValue(payload.text);
+      handler.setValue(payload.text, payload);
     }
   }
 

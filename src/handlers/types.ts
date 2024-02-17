@@ -1,4 +1,12 @@
 /**
+ * Defines options for setting value.
+ */
+export interface UpdateTextPayload {
+  lineNumber?: number;
+  column?: number;
+  text: string;
+}
+/**
  * Defines options for handler configuration.
  */
 export interface Options {
@@ -19,7 +27,7 @@ export interface IHandler {
    * @param value - The value to set.
    * @param options - Additional options.
    */
-  setValue(value: string, options?: Record<string, unknown>): void;
+  setValue(value: string, options?: UpdateTextPayload): void;
 
   /**
    * Retrieves the currently set value.
