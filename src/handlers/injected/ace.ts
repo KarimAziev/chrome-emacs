@@ -49,12 +49,10 @@ class InjectedAceHandler extends BaseInjectedHandler<HTMLElement> {
   }
 
   setValue(text: string) {
-    // Property 'executeSilenced' does not exist on type 'InjectedAceHandler'
     this.executeSilenced(() => this.editor.setValue(text, 1));
   }
 
   bindChange(f: (...args: any[]) => void) {
-    // Property 'wrapSilence' does not exist on type 'InjectedAceHandler'
     this.editor.on('change', this.wrapSilence(f));
   }
 
