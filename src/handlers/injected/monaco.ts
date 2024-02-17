@@ -1,385 +1,76 @@
 import { editor } from 'monaco-editor';
 import BaseInjectedHandler from '@/handlers/injected/base';
 import { findAncestorWithClass } from '@/util/dom';
+import { fileExtensionsByLanguage } from '@/handlers/config/monaco';
+import { isFunction, isString, isNumber } from '@/util/guard';
+import { UpdateTextPayload } from '@/handlers/types';
 
 declare global {
-  const monaco: typeof import('monaco-editor');
+  /**
+   * Extends the window interface to include monaco editor.
+   */
+  interface Window {
+    monaco: typeof import('monaco-editor');
+  }
 }
 
-const langsMappings: Record<string, string[] | null> = {
-  YAML: ['.yaml', '.yml'],
-  yaml: ['.yaml', '.yml'],
-  YML: ['.yaml', '.yml'],
-  yml: ['.yaml', '.yml'],
-  XML: [
-    '.xml',
-    '.xsd',
-    '.dtd',
-    '.ascx',
-    '.csproj',
-    '.config',
-    '.props',
-    '.targets',
-    '.wxi',
-    '.wxl',
-    '.wxs',
-    '.xaml',
-    '.svg',
-    '.svgz',
-    '.opf',
-    '.xslt',
-    '.xsl',
-  ],
-  xml: [
-    '.xml',
-    '.xsd',
-    '.dtd',
-    '.ascx',
-    '.csproj',
-    '.config',
-    '.props',
-    '.targets',
-    '.wxi',
-    '.wxl',
-    '.wxs',
-    '.xaml',
-    '.svg',
-    '.svgz',
-    '.opf',
-    '.xslt',
-    '.xsl',
-  ],
-  'WebGPU Shading Language': ['.wgsl'],
-  WGSL: ['.wgsl'],
-  wgsl: ['.wgsl'],
-  'Visual Basic': ['.vb'],
-  vb: ['.vb'],
-  Twig: ['.twig'],
-  twig: ['.twig'],
-  tcl: ['.tcl'],
-  Tcl: ['.tcl'],
-  tcltk: ['.tcl'],
-  TclTk: ['.tcl'],
-  'tcl/tk': ['.tcl'],
-  'Tcl/Tk': ['.tcl'],
-  SV: ['.sv', '.svh'],
-  sv: ['.sv', '.svh'],
-  SystemVerilog: ['.sv', '.svh'],
-  systemverilog: ['.sv', '.svh'],
-  Swift: ['.swift'],
-  swift: ['.swift'],
-  st: [
-    '.st',
-    '.iecst',
-    '.iecplc',
-    '.lc3lib',
-    '.TcPOU',
-    '.TcDUT',
-    '.TcGVL',
-    '.TcIO',
-  ],
-  StructuredText: [
-    '.st',
-    '.iecst',
-    '.iecplc',
-    '.lc3lib',
-    '.TcPOU',
-    '.TcDUT',
-    '.TcGVL',
-    '.TcIO',
-  ],
-  scl: [
-    '.st',
-    '.iecst',
-    '.iecplc',
-    '.lc3lib',
-    '.TcPOU',
-    '.TcDUT',
-    '.TcGVL',
-    '.TcIO',
-  ],
-  stl: [
-    '.st',
-    '.iecst',
-    '.iecplc',
-    '.lc3lib',
-    '.TcPOU',
-    '.TcDUT',
-    '.TcGVL',
-    '.TcIO',
-  ],
-  sql: ['.sql'],
-  SQL: ['.sql'],
-  sparql: ['.rq'],
-  SPARQL: ['.rq'],
-  aes: ['.aes'],
-  sophia: ['.aes'],
-  Sophia: ['.aes'],
-  sol: ['.sol'],
-  solidity: ['.sol'],
-  Solidity: ['.sol'],
-  shell: ['.sh', '.bash'],
-  Shell: ['.sh', '.bash'],
-  sh: ['.sh', '.bash'],
-  Sass: ['.scss'],
-  sass: ['.scss'],
-  scss: ['.scss'],
-  scheme: ['.scm', '.ss', '.sch', '.rkt'],
-  Scheme: ['.scm', '.ss', '.sch', '.rkt'],
-  Scala: ['.scala', '.sc', '.sbt'],
-  scala: ['.scala', '.sc', '.sbt'],
-  SBT: ['.scala', '.sc', '.sbt'],
-  Sbt: ['.scala', '.sc', '.sbt'],
-  sbt: ['.scala', '.sc', '.sbt'],
-  Dotty: ['.scala', '.sc', '.sbt'],
-  dotty: ['.scala', '.sc', '.sbt'],
-  'Small Basic': ['.sb'],
-  sb: ['.sb'],
-  Rust: ['.rs', '.rlib'],
-  rust: ['.rs', '.rlib'],
-  ruby: ['.rb', '.rbx', '.rjs', '.gemspec', '.pp'],
-  Ruby: ['.rb', '.rbx', '.rjs', '.gemspec', '.pp'],
-  rb: ['.rb', '.rbx', '.rjs', '.gemspec', '.pp'],
-  reStructuredText: ['.rst'],
-  restructuredtext: ['.rst'],
-  Redshift: null,
-  redshift: null,
-  redis: ['.redis'],
-  Razor: ['.cshtml'],
-  razor: ['.cshtml'],
-  R: ['.r', '.rhistory', '.rmd', '.rprofile', '.rt'],
-  r: ['.r', '.rhistory', '.rmd', '.rprofile', '.rt'],
-  'Q#': ['.qs'],
-  qsharp: ['.qs'],
-  python: ['.py', '.rpy', '.pyw', '.cpy', '.gyp', '.gypi'],
-  Python: ['.py', '.rpy', '.pyw', '.cpy', '.gyp', '.gypi'],
-  py: ['.py', '.rpy', '.pyw', '.cpy', '.gyp', '.gypi'],
-  pug: ['.jade', '.pug'],
-  Pug: ['.jade', '.pug'],
-  Jade: ['.jade', '.pug'],
-  jade: ['.jade', '.pug'],
-  proto: ['.proto'],
-  protobuf: ['.proto'],
-  'Protocol Buffers': ['.proto'],
-  PowerShell: ['.ps1', '.psm1', '.psd1'],
-  powershell: ['.ps1', '.psm1', '.psd1'],
-  ps: ['.ps1', '.psm1', '.psd1'],
-  ps1: ['.ps1', '.psm1', '.psd1'],
-  powerquery: ['.pq', '.pqm'],
-  PQ: ['.pq', '.pqm'],
-  M: ['.pq', '.pqm'],
-  'Power Query': ['.pq', '.pqm'],
-  'Power Query M': ['.pq', '.pqm'],
-  postiats: ['.dats', '.sats', '.hats'],
-  ATS: ['.dats', '.sats', '.hats'],
-  'ATS/Postiats': ['.dats', '.sats', '.hats'],
-  pla: ['.pla'],
-  PHP: ['.php', '.php4', '.php5', '.phtml', '.ctp'],
-  php: ['.php', '.php4', '.php5', '.phtml', '.ctp'],
-  pgsql: null,
-  PostgreSQL: null,
-  postgres: null,
-  pg: null,
-  postgre: null,
-  perl: ['.pl', '.pm'],
-  Perl: ['.pl', '.pm'],
-  pl: ['.pl', '.pm'],
-  pascaligo: ['.ligo'],
-  Pascaligo: ['.ligo'],
-  ligo: ['.ligo'],
-  pascal: ['.pas', '.p', '.pp'],
-  Pascal: ['.pas', '.p', '.pp'],
-  pas: ['.pas', '.p', '.pp'],
-  'objective-c': ['.m'],
-  'Objective-C': ['.m'],
-  MySQL: null,
-  mysql: null,
-  msdax: ['.dax', '.msdax'],
-  DAX: ['.dax', '.msdax'],
-  MSDAX: ['.dax', '.msdax'],
-  mips: ['.s'],
-  MIPS: ['.s'],
-  'MIPS-V': ['.s'],
-  MDX: ['.mdx'],
-  mdx: ['.mdx'],
-  Markdown: [
-    '.md',
-    '.markdown',
-    '.mdown',
-    '.mkdn',
-    '.mkd',
-    '.mdwn',
-    '.mdtxt',
-    '.mdtext',
-  ],
-  markdown: [
-    '.md',
-    '.markdown',
-    '.mdown',
-    '.mkdn',
-    '.mkd',
-    '.mdwn',
-    '.mdtxt',
-    '.mdtext',
-  ],
-  'Modula-3': ['.m3', '.i3', '.mg', '.ig'],
-  Modula3: ['.m3', '.i3', '.mg', '.ig'],
-  modula3: ['.m3', '.i3', '.mg', '.ig'],
-  m3: ['.m3', '.i3', '.mg', '.ig'],
-  Lua: ['.lua'],
-  lua: ['.lua'],
-  Liquid: ['.liquid', '.html.liquid'],
-  liquid: ['.liquid', '.html.liquid'],
-  lexon: ['.lex'],
-  Lexon: ['.lex'],
-  Less: ['.less'],
-  less: ['.less'],
-  Kotlin: ['.kt', '.kts'],
-  kotlin: ['.kt', '.kts'],
-  julia: ['.jl'],
-  Julia: ['.jl'],
-  JavaScript: ['.js', '.es6', '.jsx', '.mjs', '.cjs'],
-  javascript: ['.js', '.es6', '.jsx', '.mjs', '.cjs'],
-  js: ['.js', '.es6', '.jsx', '.mjs', '.cjs'],
-  Java: ['.java', '.jav'],
-  java: ['.java', '.jav'],
-  Ini: ['.ini', '.properties', '.gitconfig'],
-  ini: ['.ini', '.properties', '.gitconfig'],
-  HTML: [
-    '.html',
-    '.htm',
-    '.shtml',
-    '.xhtml',
-    '.mdoc',
-    '.jsp',
-    '.asp',
-    '.aspx',
-    '.jshtm',
-  ],
-  htm: [
-    '.html',
-    '.htm',
-    '.shtml',
-    '.xhtml',
-    '.mdoc',
-    '.jsp',
-    '.asp',
-    '.aspx',
-    '.jshtm',
-  ],
-  html: [
-    '.html',
-    '.htm',
-    '.shtml',
-    '.xhtml',
-    '.mdoc',
-    '.jsp',
-    '.asp',
-    '.aspx',
-    '.jshtm',
-  ],
-  xhtml: [
-    '.html',
-    '.htm',
-    '.shtml',
-    '.xhtml',
-    '.mdoc',
-    '.jsp',
-    '.asp',
-    '.aspx',
-    '.jshtm',
-  ],
-  Terraform: ['.tf', '.tfvars', '.hcl'],
-  typescript: ['.ts'],
-  tf: ['.tf', '.tfvars', '.hcl'],
-  HCL: ['.tf', '.tfvars', '.hcl'],
-  hcl: ['.tf', '.tfvars', '.hcl'],
-  Handlebars: ['.handlebars', '.hbs'],
-  handlebars: ['.handlebars', '.hbs'],
-  hbs: ['.handlebars', '.hbs'],
-  GraphQL: ['.graphql', '.gql'],
-  graphql: ['.graphql', '.gql'],
-  gql: ['.graphql', '.gql'],
-  go: ['.go'],
-  Go: ['.go'],
-  'F#': ['.fs', '.fsi', '.ml', '.mli', '.fsx', '.fsscript'],
-  FSharp: ['.fs', '.fsi', '.ml', '.mli', '.fsx', '.fsscript'],
-  fsharp: ['.fs', '.fsi', '.ml', '.mli', '.fsx', '.fsscript'],
-  freemarker2: ['.ftl', '.ftlh', '.ftlx'],
-  FreeMarker2: ['.ftl', '.ftlh', '.ftlx'],
-  'Apache FreeMarker2': ['.ftl', '.ftlh', '.ftlx'],
-  Flow9: ['.flow'],
-  Flow: ['.flow'],
-  flow9: ['.flow'],
-  flow: ['.flow'],
-  Elixir: ['.ex', '.exs'],
-  elixir: ['.ex', '.exs'],
-  ex: ['.ex', '.exs'],
-  ECL: ['.ecl'],
-  Ecl: ['.ecl'],
-  ecl: ['.ecl'],
-  dockerfile: ['.dockerfile'],
-  Dockerfile: ['.dockerfile'],
-  Dart: ['.dart'],
-  dart: ['.dart'],
-  cypher: ['.cypher', '.cyp'],
-  Cypher: ['.cypher', '.cyp'],
-  OpenCypher: ['.cypher', '.cyp'],
-  CSS: ['.css'],
-  css: ['.css'],
-  CSP: null,
-  csp: null,
-  'C#': ['.cs', '.csx', '.cake'],
-  csharp: ['.cs', '.csx', '.cake'],
-  C: ['.c', '.h'],
-  c: ['.c', '.h'],
-  CoffeeScript: ['.coffee'],
-  coffeescript: ['.coffee'],
-  coffee: ['.coffee'],
-  clojure: ['.clj', '.cljs', '.cljc', '.edn'],
-  Clojure: ['.clj', '.cljs', '.cljc', '.edn'],
-  cameligo: ['.mligo'],
-  Cameligo: ['.mligo'],
-  bicep: ['.bicep'],
-  Bicep: ['.bicep'],
-  Batch: ['.bat', '.cmd'],
-  bat: ['.bat', '.cmd'],
-  'Azure CLI': ['.azcli'],
-  azcli: ['.azcli'],
-  Apex: ['.cls'],
-  apex: ['.cls'],
-  abap: ['.abap'],
-  ABAP: ['.abap'],
-};
-
+/**
+ * Some versions of the Monaco editor have a `getLanguageIdentifier` method,
+ *  while others have a `getLanguageId` method.
+ */
 interface ExtendedModel extends editor.ITextModel {
   getLanguageIdentifier: () => { language: string };
 }
 
+/**
+ * Handler for injecting Monaco Editor functionalities into HTMLTextAreaElements.
+ */
 class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
+  editor?: typeof window.monaco.editor;
+  model?: ExtendedModel;
+  focusedEditor?: editor.ICodeEditor;
+
+  /**
+   * Constructs an instance of InjectedMonacoHandler.
+   * @param elem - The HTMLTextAreaElement to be enhanced.
+   * @param uuid - An identifier for the instance.
+   */
   constructor(elem: HTMLTextAreaElement, uuid: string) {
     super(elem, uuid);
     this.silenced = false;
   }
 
-  editor?: typeof monaco.editor;
-
-  getModel() {
-    const models = this.editor?.getModels();
-    if (!models) {
-      return;
+  /**
+   * Retreives the active or first model from the Monaco editor.
+   * @returns The current editor model.
+   */
+  private getModel() {
+    if (this.focusedEditor) {
+      return this.focusedEditor.getModel() as ExtendedModel;
     }
+
+    const models = this.editor?.getModels();
+
     const model =
-      (models && models?.find((m) => (m.getValue() || '').length > 0)) ||
-      models[0];
+      models?.find((m) => (m.getValue() || '').length > 0) ||
+      (models && models[0]);
+
     return model as unknown as ExtendedModel;
   }
+
+  /**
+   * Initializes the Monaco editor variables and active editor if possible.
+   * @returns A promise indicating the completion of the loading process.
+   */
 
   load() {
     return new Promise<void>((resolve) => {
       try {
-        if (typeof monaco !== 'undefined' && monaco.editor) {
-          this.editor = monaco.editor;
+        if (typeof window.monaco !== 'undefined' && window.monaco.editor) {
+          this.editor = window.monaco.editor;
+          const editors = window.monaco.editor?.getEditors();
+          this.focusedEditor = editors?.find((e) => e?.hasTextFocus());
+          this.model = this.getModel();
         }
       } catch (error) {
         throw new Error('Monaco editor is not available.');
@@ -389,56 +80,88 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
     });
   }
 
-  setValue(value: string) {
-    const editor = this.getModel();
-    if (editor) {
-      editor.setValue(value);
+  /**
+   * Sets the editor or textarea value and optionally moves the caret.
+   * @param value - New value to be set.
+   * @param options - Options to control the text update.
+   */
+  setValue(value: string, options?: UpdateTextPayload) {
+    if (this.model) {
+      this.model.setValue(value);
+    }
+    if (this.focusedEditor) {
+      this.focusedEditor.setValue(value);
+
+      const position = isNumber(options?.lineNumber) &&
+        isNumber(options?.column) && {
+          lineNumber: options.lineNumber,
+          column: options.column,
+        };
+
+      if (position) {
+        this.focusedEditor.setPosition(position);
+        this.focusedEditor.revealPositionInCenter(position);
+      }
     } else if (this.elem) {
       this.elem.value = value;
     }
-
-    if (this.elem) {
-      this.elem.scrollIntoView();
-    }
   }
 
+  /**
+   * Attempts to find an ancestor element with a Monaco-related CSS class.
+   * @returns The found element or undefined.
+   */
+  private findAncestorWithMonacoClass() {
+    return (
+      findAncestorWithClass(this.elem, 'editor-instance') ||
+      findAncestorWithClass(this.elem, 'monaco-editor')
+    );
+  }
+
+  /**
+   * Retrieves the current value from the Monaco editor model or textarea.
+   * @returns The current value as a string.
+   */
   getValue() {
-    const editor = this.getModel();
-
-    if (editor) {
-      const value = editor.getValue();
-      return value;
+    if (this.model) {
+      return this.model.getValue();
+    } else if (!this.elem) {
+      return '';
     } else {
-      const parent =
-        (this.elem && findAncestorWithClass(this.elem, 'editor-instance')) ||
-        findAncestorWithClass(this.elem, 'monaco-editor');
-      if (parent) {
-        return parent.textContent || '';
-      } else {
-        // Fallback logic if monaco is not available
-        return this.elem ? (this.elem as HTMLTextAreaElement).value : '';
-      }
+      return this.findAncestorWithMonacoClass()?.textContent || this.elem.value;
     }
   }
 
+  /**
+   * Obtains the language ID using the appropriate method from the Monaco model.
+   * @returns The language ID or undefined.
+   */
+  private getModelLanguageId() {
+    const model = this.model;
+    if (!model) {
+      return;
+    }
+
+    const methodName = (
+      ['getLanguageId', 'getLanguageIdentifier'] as const
+    ).find((name) => isFunction(model[name]));
+
+    const lang = methodName && model[methodName]();
+
+    return isString(lang) ? lang : lang?.language;
+  }
+
+  /**
+   * Determines the file extension associated with the current language in the Monaco editor model.
+   * @returns The file extension as a string or null if not determinable.
+   */
   getExtension() {
-    const model = this.getModel();
-    if (model) {
-      const language =
-        (model.getLanguageId && model.getLanguageId()) ||
-        (model.getLanguageIdentifier && model.getLanguageIdentifier());
-      const extension =
-        language &&
-        langsMappings[
-          typeof language === 'string' ? language : language.language
-        ];
-
-      return extension;
-    } else {
-      return null;
-    }
+    const language = this.getModelLanguageId();
+    return language && fileExtensionsByLanguage[language];
   }
-
+  /**
+   * Intended for binding change event handlers. Currently not implemented as it relies on specific editor event bindings.
+   */
   bindChange() {}
 }
 
