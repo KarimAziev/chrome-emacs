@@ -1,60 +1,116 @@
-# Chrome Emacs
+<div align="center">
 
-Chrome Emacs is a Chrome Extension that allows you to use Emacs for editing text seamlessly.
+![](./app/images/icon.png)
+
+</div>
+
+This is a [Chrome Extension](https://chromewebstore.google.com/detail/chrome-emacs/dabdpcafiblbndpoadckibiaojbdnpjg) focused on bi-directional editing in online text editors and text areas from within Emacs.
 
 Differences from the original Atomic Chrome extension:
 
 - **Migration to Chrome Extension Manifest V3**: Ensures up-to-date compatibility and security.
 - **Monaco Editor Support**: Expands the range of supported online editors.
-- **TypeScript Rewrite**: For enhanced stability, maintainability, and performance.
+- **Auto-major mode**: Attempts to set up the corresponding editing mode automatically for online editors.
+- **TypeScript Rewrite**: Enhances stability, maintainability, and performance.
 
-## Online Editors Support
+Chrome Emacs is compatible with several widely-used online editors, including:
 
-Chrome Emacs works with several widely-used online editors, including:
+- ☒ [codepen.io](https://codepen.io/)
+- ☒ [stackblitz.com](https://stackblitz.com/)
+- ☒ [jsfiddle.net](https://jsfiddle.net/)
+- ☒ [leetcode.com](https://leetcode.com/)
+- ☒ [hackerrank.com](https://www.hackerrank.com/)
+- ☒ [repl.it](https://repl.it/)
+- ☒ [glitch.com](https://glitch.com/)
+- ☒ [plnkr.co](https://plnkr.co/)
+- ☐ [codesandbox.io](https://codesandbox.io/) (Currently unsupported due to a lack of Monaco API exposure).
 
-- [x] [codepen.io](https://codepen.io/)
-- [x] [stackblitz.com](https://stackblitz.com/)
-- [x] [jsfiddle.net](https://jsfiddle.net/)
-- [x] [leetcode.com](https://leetcode.com/)
-- [x] [hackerrank.com](https://www.hackerrank.com/)
-- [x] [repl.it](https://repl.it/)
-- [x] [glitch.com](https://glitch.com/)
-- [ ] [codesandbox.io](https://codesandbox.io/) (Currently unsupported due to a lack of Monaco API exposure).
+### Installation
 
-## Installation
+#### Chrome Extension
 
-To start using Chrome Emacs, follow these steps to set up the extension locally (until it is published to the Chrome Web Store):
+Install the [Chrome extension](https://chromewebstore.google.com/detail/chrome-emacs/dabdpcafiblbndpoadckibiaojbdnpjg).
 
-1. Clone the repository to your local machine.
-2. Ensure you have the correct version of Node.js installed, as specified in the `.nvmrc` file in the repository. If you're using NVM (Node Version Manager), switch to the correct version with `nvm use`.
-3. Run `npm install` to install all required dependencies.
-4. Build the extension by running `npm run build`.
+#### Emacs Integration
 
-Once the build process is complete, you'll have an `app` directory containing the built extension, which can be loaded into Chrome:
+<details><summary> Install the corresponding Emacs package from <a href="https://github.com/KarimAziev/atomic-chrome">this fork</a>.
+  </summary>
 
-1. Open Chrome and navigate to `chrome://extensions/`
-2. Enable "Developer mode" by toggling the switch in the top-right corner.
-3. Click "Load unpacked" and select the `app` directory created by the build process.
+##### With use-package and straight.el
 
-Additionally, install the corresponding Emacs package from [this fork](https://github.com/KarimAziev/atomic-chrome), which contains improvements and updates.
+```emacs-lisp
+(use-package atomic-chrome
+  :demand t
+  :straight (atomic-chrome
+             :repo "KarimAziev/atomic-chrome"
+             :type git
+             :host github)
+  :commands (atomic-chrome-start-server)
+  :config (atomic-chrome-start-server))
+```
 
-## Usage
+##### Manual Installation
 
-Ensure that Emacs is running with the `atomic-chrome` package loaded.
+Download the source code and place it in your desired directory (e.g., `~/.emacs.d/atomic-chrome/`):
 
-1. Focus on a textarea or a contenteditable element in Chrome.
+```
+git clone https://github.com/KarimAziev/atomic-chrome.git ~/.emacs.d/atomic-chrome/
+```
+
+Add the downloaded directory to the load path and require it:
+
+```emacs-lisp
+(add-to-list 'load-path "~/.emacs.d/atomic-chrome/")
+(require 'atomic-chrome)
+(atomic-chrome-start-server)
+```
+
+</details>
+
+### Usage
+
+Ensure that Emacs is running with the [package](https://github.com/KarimAziev/atomic-chrome) loaded.
+
+1. Focus on a textarea, text editor, or a contenteditable element in Chrome.
 2. Activate Chrome Emacs. This can typically be done by clicking on the extension's icon or using a keyboard shortcut.
 
 The text will now open in an Emacs buffer, ready for you to edit.
 
-### How do I bind a shortcut?
+#### How do I bind a shortcut?
 
 1. Navigate to `chrome://extensions`.
-2. Scroll down and click 'Keyboard shortcuts' at the bottom of the page.
+2. Scroll down and click on `Keyboard shortcuts` at the bottom of the page.
 3. Assign a shortcut for activating Chrome Emacs.
 
-## Development
+#### Development
 
-This repository is dedicated to the development of the Chrome extension. For improvements to the Emacs integration and package, visit [the associated GitHub repository](https://github.com/KarimAziev/atomic-chrome).
+<details><summary>Local setup </summary>
+
+1. Clone the repository to your local machine:
+   ```
+   git clone https://github.com/KarimAziev/chrome-emacs.git
+   ```
+2. Ensure the correct version of Node.js is installed, as specified in the =.nvmrc= file. Switch to the correct version with `nvm use`, if using NVM.
+3. Install required dependencies:
+   ```
+   npm install
+   ```
+4. Build the extension:
+
+- For rebuilding the extension on file save, run:
+  ```
+  npm run dev
+  ```
+- For a one-time build:
+  ```
+  npm run build
+  ```
+
+5. Load the built `app` directory into Chrome:
+   - Navigate to `chrome://extensions/`
+   - Toggle "Developer mode" at the top right.
+   - Click "Load unpacked" and select the `app` directory.
+
+</details>
 
 Your contributions to both the Chrome extension and the Emacs package are welcome!
