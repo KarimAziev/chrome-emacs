@@ -6,12 +6,16 @@
 
 This is a [Chrome Extension](https://chromewebstore.google.com/detail/chrome-emacs/dabdpcafiblbndpoadckibiaojbdnpjg) focused on bi-directional editing in online text editors and text areas from within Emacs.
 
-Differences from the original Atomic Chrome extension:
+After the original Atomic Chrome extension was removed from the Chrome Web Store due to policy violations, I undertook the task of creating an entirely refreshed and compliant version. Now named "Chrome Emacs," represents more than just a fork; it is a comprehensive rewrite that adheres to the newest standards and Chrome Extension Manifest V3, ensuring both compliance and enhanced security.
 
-- **Migration to Chrome Extension Manifest V3**: Ensures up-to-date compatibility and security.
-- **Monaco Editor Support**: Expands the range of supported online editors.
-- **Auto-major mode**: Attempts to set up the corresponding editing mode automatically for online editors.
-- **TypeScript Rewrite**: Enhances stability, maintainability, and performance.
+Here are some of the major improvements and changes:
+
+- **Complete Rewrite in TypeScript**: This enhances the extension's stability, maintainability, and performance.
+- **Support for the Monaco Editor**: Expanding the range of compatible online editors far beyond the original.
+- **Auto-Major Mode Detection**: Automatically configures the most suitable editing mode for any given online editor.
+- **Migration to Chrome Extension Manifest V3**: Guarantees the extension stays compatible with the latest browser versions and meets the current security standards.
+
+Through these efforts, "Chrome Emacs" not only preserves the core functionalities originally beloved by users but also introduces new features and optimizations—effectively making it a brand-new extension.
 
 Chrome Emacs is compatible with several widely-used online editors, including:
 
