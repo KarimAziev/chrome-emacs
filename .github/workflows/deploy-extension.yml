@@ -30,6 +30,10 @@ jobs:
     - name: Update manifest version
       id: update-version
       run: |
+        # Generate a unique filename to store the environment variable
+        echo "VERSION_FILE=version.env" >> $GITHUB_ENV
+        VERSION_FILE=version.env
+
         # Assuming semantic versioning and simple increment in patch version
         CURRENT_VERSION=$(jq -r '.version' $DIRECTORY/manifest.json)
         # Increment version (simple approach for patch version)
@@ -38,7 +42,10 @@ jobs:
         NEW_VERSION="${VERSION[0]}.${VERSION[1]}.${VERSION[2]}"
         echo "New version: $NEW_VERSION"
         jq --arg v "$NEW_VERSION" '.version = $v' $DIRECTORY/manifest.json > temp.json && mv temp.json $DIRECTORY/manifest.json
-        echo "::set-output name=version::$NEW_VERSION"
+
+        # Use Environment File to set the new version
+        echo "NEW_VERSION=$NEW_VERSION" >> $VERSION_FILE
+
         git config user.name "github-actions"
         git config user.email "github-actions@github.com"
         git add $DIRECTORY/manifest.json
