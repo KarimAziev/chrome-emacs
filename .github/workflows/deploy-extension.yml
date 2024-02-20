@@ -1,4 +1,4 @@
-name: Release and Publish Chrome Extension
+name: Build, Release, and Publish Chrome Extension
 
 on:
   push:
@@ -11,63 +11,48 @@ env:
   ZIP_NAME: release.zip
 
 jobs:
-  Version:
+  PrepareAndDeploy:
     runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.update-version.outputs.version }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Update manifest version
-        id: update-version
-        run: |
-          # Assuming semantic versioning and simple increment in patch version
-          CURRENT_VERSION=$(jq -r '.version' $DIRECTORY/manifest.json)
-          # Increment version (simple approach for patch version)
-          IFS='.' read -ra VERSION <<< "$CURRENT_VERSION"
-          VERSION[2]=$((VERSION[2]+1))
-          NEW_VERSION="${VERSION[0]}.${VERSION[1]}.${VERSION[2]}"
-          echo "New version: $NEW_VERSION"
-          jq --arg v "$NEW_VERSION" '.version = $v' $DIRECTORY/manifest.json > temp.json && mv temp.json $DIRECTORY/manifest.json
-          echo "::set-output name=version::$NEW_VERSION"
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add $DIRECTORY/manifest.json
-          git commit -m "Increment version to $NEW_VERSION"
-          git push
-        shell: bash
 
-  BuildAndZip:
-    needs: Version
-    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: '.nvmrc'
-          cache: npm
-      - run: npm ci
-      - name: Build
-        run: npm run build
-      - name: Zip the app directory for release
-        run: |
-          cd $DIRECTORY
-          zip -r ../${{ env.ZIP_NAME }} ./*
-          cd ..
-      - name: Upload Zip for Submit Job
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ env.ZIP_NAME }}
-          path: ${{ env.ZIP_NAME }}
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
-  Submit:
-    needs: BuildAndZip
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v3
-        with:
-          name: ${{ env.ZIP_NAME }}
-          path: .
-      - name: Submit to Google Chrome Web Store
-        run: npx chrome-webstore-upload-cli@2 upload --source ${{ env.ZIP_NAME }} --extension-id ${{ secrets.EXTENSION_ID }} --client-id ${{ secrets.CLIENT_ID }} --client-secret ${{ secrets.CLIENT_SECRET }} --refresh-token ${{ secrets.REFRESH_TOKEN }} --auto-publish
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version-file: '.nvmrc'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Update manifest version
+      id: update-version
+      run: |
+        # Assuming semantic versioning and simple increment in patch version
+        CURRENT_VERSION=$(jq -r '.version' $DIRECTORY/manifest.json)
+        # Increment version (simple approach for patch version)
+        IFS='.' read -ra VERSION <<< "$CURRENT_VERSION"
+        VERSION[2]=$((VERSION[2]+1))   # Increment the patch version
+        NEW_VERSION="${VERSION[0]}.${VERSION[1]}.${VERSION[2]}"
+        echo "New version: $NEW_VERSION"
+        jq --arg v "$NEW_VERSION" '.version = $v' $DIRECTORY/manifest.json > temp.json && mv temp.json $DIRECTORY/manifest.json
+        echo "::set-output name=version::$NEW_VERSION"
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+        git add $DIRECTORY/manifest.json
+        git commit -m "Increment version to $NEW_VERSION"
+        git push
+
+    - name: Build the project
+      run: npm run build
+
+    - name: Zip the app directory for release
+      run: |
+        cd $DIRECTORY
+        zip -r ../${{ env.ZIP_NAME }} ./*
+        cd ..
+
+    - name: Submit to Google Chrome Web Store
+      run: npx chrome-webstore-upload-cli@2 upload --source ${{ env.ZIP_NAME }} --extension-id ${{ secrets.EXTENSION_ID }} --client-id ${{ secrets.CLIENT_ID }} --client-secret ${{ secrets.CLIENT_SECRET }} --refresh-token ${{ secrets.REFRESH_TOKEN }} --auto-publish
