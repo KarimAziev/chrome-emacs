@@ -1,68 +1,64 @@
+name: Release and Publish Chrome Extension
+
+on:
+  push:
+    branches:
+      - main
+
 env:
   DIRECTORY: app
   PROJECT_NAME: chrome-emacs
   ZIP_NAME: release.zip
 
-name: Release
-on:
-  push:
-    branches:
-      - main
 jobs:
   Version:
+    runs-on: ubuntu-latest
     outputs:
-      created: ${{ steps.version.outputs.created }}
+      created: ${{ steps.daily-version.outputs.created }}
+      version: ${{ steps.daily-version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Create tag if necessary
+        id: daily-version
+        uses: fregante/daily-version-action@v2
+        with:
+          prefix: v
+      - name: Ready for publish
+        if: steps.daily-version.outputs.created
+        run: echo "Version ${{ steps.daily-version.outputs.version }} created"
+
+  BuildAndZip:
+    needs: Version
+    if: needs.Version.outputs.created
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
       - uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc
+          node-version-file: '.nvmrc'
           cache: npm
-
       - run: npm ci
-
       - name: Build
         run: npm run build
-
-      - name: Create tag if necessary
-        id: version
-        uses: fregante/daily-version-action@v2
-
-      - name: Update manifest.json with version ${{ steps.version.outputs.version }}
-        if: steps.version.outputs.created
-        run: npx dot-json@1 "$DIRECTORY/manifest.json" version "${{ steps.version.outputs.version }}"
-
       - name: Zip the app directory for release
-        if: steps.version.outputs.created
         run: |
           cd $DIRECTORY
           zip -r ../${{ env.ZIP_NAME }} ./*
           cd ..
-
-      - name: Upload app for "Submit" jobs
-        if: steps.version.outputs.created
+      - name: Upload Zip for Submit Job
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.ZIP_NAME }}
           path: ${{ env.ZIP_NAME }}
 
-      - name: Create GitHub release
-        if: steps.version.outputs.created
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release create "${{ steps.version.outputs.version }}" --generate-notes ${{ env.ZIP_NAME }}
-
   Submit:
-    needs: Version
-    if: needs.Version.outputs.created == 'true'
+    needs: BuildAndZip
+    if: needs.Version.outputs.created
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v3
         with:
           name: ${{ env.ZIP_NAME }}
           path: .
-
       - name: Submit to Google Chrome Web Store
         run: npx chrome-webstore-upload-cli@2 upload --source ${{ env.ZIP_NAME }} --extension-id ${{ secrets.EXTENSION_ID }} --client-id ${{ secrets.CLIENT_ID }} --client-secret ${{ secrets.CLIENT_SECRET }} --refresh-token ${{ secrets.REFRESH_TOKEN }} --auto-publish
