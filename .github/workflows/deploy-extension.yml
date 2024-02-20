@@ -22,10 +22,16 @@ jobs:
         id: daily-version
         uses: fregante/daily-version-action@v2
         with:
-          prefix: v
+          prefix: ''
       - name: Ready for publish
         if: steps.daily-version.outputs.created
         run: echo "Version ${{ steps.daily-version.outputs.version }} created"
+      - name: Update manifest.json with version
+        if: steps.daily-version.outputs.created
+        run: |
+          VERSION="${{ steps.daily-version.outputs.version }}"
+          jq --arg v "$VERSION" '.version = $v' $DIRECTORY/manifest.json > temp.json && mv temp.json $DIRECTORY/manifest.json
+        shell: bash
 
   BuildAndZip:
     needs: Version
