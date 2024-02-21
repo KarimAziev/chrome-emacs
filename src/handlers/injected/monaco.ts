@@ -39,23 +39,32 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
     super(elem, uuid);
     this.silenced = false;
   }
-
   /**
-   * Retreives the active or first model from the Monaco editor.
-   * @returns The current editor model.
+   * Retrieves the URI of the currently targeted Monaco editor element.
+   * This method searches up the DOM hierarchy to find an element with a `data-uri` attribute,
+   * which is then returned as a Monaco `Uri` object.
+   *
+   * @returns The `Uri` of the current editor, or `undefined` if the URI cannot be determined.
+   */
+  private getUri() {
+    const editorEl = this.elem?.closest('.monaco-editor');
+
+    return (editorEl as HTMLElement)?.dataset
+      ?.uri as unknown as editor.ITextModel['uri'];
+  }
+  /**
+   * Retrieves the text model from a given URI.
+   * This method uses the editor's `getModel` method with the URI obtained from `getUri` to fetch the corresponding text model.
+   *
+   * @returns The text model associated with the given URI, or `undefined` if the model cannot be retrieved.
    */
   private getModel() {
-    if (this.focusedEditor) {
-      return this.focusedEditor.getModel() as ExtendedModel;
-    }
-
-    const models = this.editor?.getModels();
-
-    const model =
-      models?.find((m) => (m.getValue() || '').length > 0) ||
-      (models && models[0]);
-
-    return model as unknown as ExtendedModel;
+    const uri = this.getUri();
+    return (
+      uri &&
+      this.editor?.getModel &&
+      (this.editor.getModel(uri) as ExtendedModel)
+    );
   }
 
   /**
@@ -68,13 +77,18 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
       try {
         if (typeof window.monaco !== 'undefined' && window.monaco.editor) {
           this.editor = window.monaco.editor;
+
           const editors =
             isFunction(window.monaco.editor?.getEditors) &&
             window.monaco.editor.getEditors();
-          this.focusedEditor = editors
-            ? editors?.find((e) => e?.hasTextFocus() && e.getValue())
-            : undefined;
+
           this.model = this.getModel();
+
+          if (Array.isArray(editors)) {
+            this.focusedEditor = editors?.find(
+              (e) => isFunction(e.getModel) && e.getModel() === this.model,
+            );
+          }
         }
       } catch (error) {
         throw new Error('Monaco editor is not available.');
@@ -93,7 +107,8 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
     if (this.model) {
       this.model.setValue(value);
     }
-    if (this.focusedEditor) {
+
+    if (this.focusedEditor?.setValue) {
       this.focusedEditor.setValue(value);
 
       const position = isNumber(options?.lineNumber) &&
@@ -102,8 +117,11 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
           column: options.column,
         };
 
-      if (position) {
+      if (position && this.focusedEditor?.setPosition) {
         this.focusedEditor.setPosition(position);
+      }
+
+      if (position && this.focusedEditor?.revealPositionInCenter) {
         this.focusedEditor.revealPositionInCenter(position);
       }
     } else if (this.elem) {
@@ -159,10 +177,18 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
 
   /**
    * Determines the file extension associated with the current language in the Monaco editor model.
-   * @returns The file extension as a string or null if not determinable.
+   * @returns The file extension as a array of strings or null if not determinable.
    */
   getExtension() {
     const language = this.getModelLanguageId();
+    const languages =
+      isFunction(window.monaco?.languages?.getLanguages) &&
+      window.monaco?.languages?.getLanguages();
+
+    if (language && Array.isArray(languages)) {
+      const found = languages.find((lang) => lang?.id === language);
+      return found?.extensions;
+    }
     return language && fileExtensionsByLanguage[language];
   }
   /**
