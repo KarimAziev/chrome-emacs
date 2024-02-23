@@ -27,6 +27,7 @@
   },
   "scripts": {
     "clean": "rimraf ./app/scripts",
+    "predev": "npm run clean",
     "prebuild": "npm run clean",
     "prepublish": "npm run build",
     "build": "webpack --mode production",

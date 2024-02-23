@@ -1,4 +1,4 @@
-import { editor } from 'monaco-editor';
+import { editor, IDisposable } from 'monaco-editor';
 import BaseInjectedHandler from '@/handlers/injected/base';
 import { findAncestorWithClass } from '@/util/dom';
 import { fileExtensionsByLanguage } from '@/handlers/config/monaco';
@@ -26,9 +26,26 @@ interface ExtendedModel extends editor.ITextModel {
  * Handler for injecting Monaco Editor functionalities into HTMLTextAreaElements.
  */
 class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
+  /**
+   * Represents the monaco editor instance. This is undefined if Monaco has not been initialized.
+   */
   editor?: typeof window.monaco.editor;
+  /**
+   * The text model representing the content within the Monaco editor. This model provides
+   * functionalities such as setting/getting value, observing changes etc.
+   */
   model?: ExtendedModel;
+  /**
+   * A reference to the currently focused Monaco code editor instance.
+   * This is used for syncing the cursor position.
+   * It may be undefined in some contexts.
+   */
   focusedEditor?: editor.ICodeEditor;
+  /**
+   * Stores a reference to the subscription for listening to text model content changes.
+   * This allows for cleanup by calling its `dispose` method.
+   */
+  changeListener?: IDisposable;
 
   /**
    * Constructs an instance of InjectedMonacoHandler.
@@ -39,23 +56,34 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
     super(elem, uuid);
     this.silenced = false;
   }
-
   /**
-   * Retreives the active or first model from the Monaco editor.
-   * @returns The current editor model.
+   * Retrieves the URI of the currently targeted Monaco editor element.
+   * This method searches up the DOM hierarchy to find an element with a `data-uri` attribute,
+   * which is then returned as a Monaco `Uri` object.
+   *
+   * @returns The `Uri` of the current editor, or `undefined` if the URI cannot be determined.
+   */
+  private getUri() {
+    const editorEl = this.elem?.closest('.monaco-editor');
+
+    return (editorEl as HTMLElement)?.dataset
+      ?.uri as unknown as editor.ITextModel['uri'];
+  }
+  /**
+   * Retrieves the text model from a given URI. This method uses the editor's
+   * `getModel` method with the URI obtained from `getUri` to fetch the
+   * corresponding text model.
+   *
+   * @returns The text model associated with the given URI, or `undefined` if
+     the model cannot be retrieved.
    */
   private getModel() {
-    if (this.focusedEditor) {
-      return this.focusedEditor.getModel() as ExtendedModel;
-    }
-
-    const models = this.editor?.getModels();
-
-    const model =
-      models?.find((m) => (m.getValue() || '').length > 0) ||
-      (models && models[0]);
-
-    return model as unknown as ExtendedModel;
+    const uri = this.getUri();
+    return (
+      uri &&
+      this.editor?.getModel &&
+      (this.editor.getModel(uri) as ExtendedModel)
+    );
   }
 
   /**
@@ -68,13 +96,18 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
       try {
         if (typeof window.monaco !== 'undefined' && window.monaco.editor) {
           this.editor = window.monaco.editor;
+
           const editors =
             isFunction(window.monaco.editor?.getEditors) &&
             window.monaco.editor.getEditors();
-          this.focusedEditor = editors
-            ? editors?.find((e) => e?.hasTextFocus() && e.getValue())
-            : undefined;
+
           this.model = this.getModel();
+
+          if (Array.isArray(editors)) {
+            this.focusedEditor = editors?.find(
+              (e) => isFunction(e.getModel) && e.getModel() === this.model,
+            );
+          }
         }
       } catch (error) {
         throw new Error('Monaco editor is not available.');
@@ -90,25 +123,31 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
    * @param options - Options to control the text update.
    */
   setValue(value: string, options?: UpdateTextPayload) {
-    if (this.model) {
-      this.model.setValue(value);
-    }
-    if (this.focusedEditor) {
-      this.focusedEditor.setValue(value);
-
-      const position = isNumber(options?.lineNumber) &&
-        isNumber(options?.column) && {
-          lineNumber: options.lineNumber,
-          column: options.column,
-        };
-
-      if (position) {
-        this.focusedEditor.setPosition(position);
-        this.focusedEditor.revealPositionInCenter(position);
+    this.executeSilenced(() => {
+      if (this.model) {
+        this.model.setValue(value);
       }
-    } else if (this.elem) {
-      this.elem.value = value;
-    }
+
+      if (this.focusedEditor?.setValue) {
+        this.focusedEditor.setValue(value);
+
+        const position = isNumber(options?.lineNumber) &&
+          isNumber(options?.column) && {
+            lineNumber: options.lineNumber,
+            column: options.column,
+          };
+
+        if (position && this.focusedEditor?.setPosition) {
+          this.focusedEditor.setPosition(position);
+        }
+
+        if (position && this.focusedEditor?.revealPositionInCenter) {
+          this.focusedEditor.revealPositionInCenter(position);
+        }
+      } else if (this.elem) {
+        this.elem.value = value;
+      }
+    });
   }
 
   /**
@@ -157,18 +196,59 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
     return isString(lang) ? lang : lang?.language;
   }
 
+  getPosition() {
+    const positionData = this.focusedEditor?.getPosition();
+    return {
+      lineNumber: positionData?.lineNumber || 1,
+      column: positionData?.column || 1,
+    };
+  }
+
   /**
-   * Determines the file extension associated with the current language in the Monaco editor model.
-   * @returns The file extension as a string or null if not determinable.
+   * Determines the file extension associated with the current language in the
+     Monaco editor model.
+   * @returns The file extension as a array of strings or null if not
+     determinable.
    */
   getExtension() {
     const language = this.getModelLanguageId();
+    const languages =
+      isFunction(window.monaco?.languages?.getLanguages) &&
+      window.monaco?.languages?.getLanguages();
+
+    if (language && Array.isArray(languages)) {
+      const found = languages.find((lang) => lang?.id === language);
+      return found?.extensions;
+    }
     return language && fileExtensionsByLanguage[language];
   }
   /**
-   * Intended for binding change event handlers. Currently not implemented as it relies on specific editor event bindings.
+   * Attaches a listener to the Monaco editor model's content change event. When
+   * the content changes, the provided callback function is executed. The
+   * callback receives an event object with the updated content of the editor.
+   *
+   * @param f - A callback function that will be invoked with an event object
+     containing the updated content as soon as the editor's content changes.
    */
-  bindChange() {}
+  bindChange(f: (...args: any[]) => void) {
+    if (this.model?.onDidChangeContent) {
+      const contentChangeListener = this.model.onDidChangeContent(
+        this.wrapSilence(f),
+      );
+      this.changeListener = contentChangeListener;
+    }
+  }
+
+  /**
+   * Removes the previously attached listener from the Monaco editor model's
+   * content change event. After calling this method, changes to the content
+   * will no longer invoke the callback function passed to `bindChange`.
+   */
+  unbindChange() {
+    if (this.changeListener?.dispose) {
+      this.changeListener.dispose();
+    }
+  }
 }
 
 export default InjectedMonacoHandler;

@@ -1,6 +1,11 @@
 import { v4 as uuidv4 } from 'uuid';
 import BaseHandler from '@/handlers/base';
-import { IContentEventsBinder, UpdateTextPayload } from '@/handlers/types';
+import {
+  IContentEventsBinder,
+  UpdateTextPayload,
+  Options,
+  PostToInjectedPayloadMap,
+} from '@/handlers/types';
 
 /**
  * A specialized handler extending BaseHandler for injecting and communicating with scripts.
@@ -8,7 +13,7 @@ import { IContentEventsBinder, UpdateTextPayload } from '@/handlers/types';
 export default class InjectorHandler extends BaseHandler {
   private name: string;
   private uuid: string;
-  private _getValueCallback: ((payload: any) => void) | null;
+  private _getValueCallback: ((payload: UpdateTextPayload) => void) | null;
 
   /**
    * Creates an instance of InjectorHandler.
@@ -42,12 +47,13 @@ export default class InjectorHandler extends BaseHandler {
   /**
    * Loads and initializes communication with the injected script.
    */
+
   async load() {
     this.injectScript(() =>
       this.postToInjected('initialize', { name: this.name }),
     );
 
-    return await new Promise<void>((resolve) => this.once('ready', resolve));
+    return await new Promise<Options>((resolve) => this.once('ready', resolve));
   }
 
   /**
@@ -68,7 +74,7 @@ export default class InjectorHandler extends BaseHandler {
         this.removeListener('value', this._getValueCallback);
       }
 
-      this._getValueCallback = (payload: any) => {
+      this._getValueCallback = (payload: UpdateTextPayload) => {
         if (typeof payload.text === 'string') {
           resolve(payload.text);
         } else {
@@ -123,7 +129,10 @@ export default class InjectorHandler extends BaseHandler {
    * @param type - The type of the message.
    * @param payload - The payload of the message.
    */
-  private postToInjected(type: string, payload?: Record<string, any>): void {
+  private postToInjected<T extends keyof PostToInjectedPayloadMap>(
+    type: T,
+    payload?: PostToInjectedPayloadMap[T],
+  ): void {
     const message = {
       type: type,
       uuid: this.uuid,

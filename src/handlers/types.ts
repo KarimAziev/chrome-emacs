@@ -1,16 +1,19 @@
+export interface IPosition {
+  lineNumber?: number;
+  column?: number;
+}
+
 /**
  * Defines options for setting value.
  */
-export interface UpdateTextPayload {
-  lineNumber?: number;
-  column?: number;
+export interface UpdateTextPayload extends IPosition {
   text: string;
 }
 /**
  * Defines options for handler configuration.
  */
-export interface Options {
-  extension?: string | string[];
+export interface Options extends IPosition {
+  extension?: string | string[] | null;
 }
 
 /**
@@ -20,7 +23,7 @@ export interface IHandler {
   /**
    * Loads data or performs an initialization operation.
    */
-  load(): Promise<void>;
+  load(): Promise<Options>;
 
   /**
    * Sets a value with optional settings.
@@ -75,3 +78,27 @@ export interface IContentEventsBinder {
    */
   bind(context: IHandler, window: Window): void;
 }
+
+export type PostToInjectorPayloadMap = {
+  ready: Options;
+  value: UpdateTextPayload;
+  change: {};
+};
+
+export type BaseInjectedPostType = keyof PostToInjectorPayloadMap;
+
+export interface RegisterPayload extends UpdateTextPayload, Options {
+  url: string;
+  title: string;
+}
+
+export type SocketPostPayloadMap = {
+  register: RegisterPayload;
+  updateText: UpdateTextPayload;
+};
+
+export type PostToInjectedPayloadMap = {
+  initialize: { name: string };
+  setValue: UpdateTextPayload;
+  getValue: undefined;
+};
