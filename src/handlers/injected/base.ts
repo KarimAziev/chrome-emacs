@@ -1,4 +1,9 @@
-import { Options, UpdateTextPayload } from '@/handlers/types';
+import {
+  Options,
+  UpdateTextPayload,
+  PostToInjectorPayloadMap,
+  BaseInjectedPostType,
+} from '@/handlers/types';
 
 /**
  * A base class for creating handlers that are injected into web pages.
@@ -101,19 +106,29 @@ export default class BaseInjectedHandler<Elem extends Element> {
    * Posts a 'ready' message to the injector, optionally including extension data.
    */
   postReady(): void {
-    const payload: Options = {};
     const extension = this.getExtension();
+    const position = this.getPosition();
+    const payload = {
+      ...position,
+      extension,
+    };
 
-    if (extension) {
-      payload.extension = extension;
-    }
     this.postToInjector('ready', payload);
+  }
+
+  getPosition(): Pick<UpdateTextPayload, 'lineNumber' | 'column'> {
+    return {
+      lineNumber: 1,
+      column: 1,
+    };
   }
 
   /**
    * Optionally returns data about the handler's capabilities. Designed to be overridden.
    */
-  getExtension(): Options['extension'] | null | void {}
+  getExtension(): Options['extension'] {
+    return undefined;
+  }
 
   /**
    * Wraps a function with a check that only allows execution if the handler is not silenced.
@@ -135,7 +150,10 @@ export default class BaseInjectedHandler<Elem extends Element> {
    * @param type - The type of the message.
    * @param payload - The message payload.
    */
-  postToInjector(type: string, payload?: unknown): void {
+  postToInjector<T extends BaseInjectedPostType>(
+    type: T,
+    payload?: PostToInjectorPayloadMap[T],
+  ): void {
     const message = {
       type: type,
       uuid: this.uuid,

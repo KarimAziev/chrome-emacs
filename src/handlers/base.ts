@@ -3,6 +3,7 @@ import {
   IHandler,
   IContentEventsBinder,
   UpdateTextPayload,
+  Options,
 } from '@/handlers/types';
 
 /**
@@ -32,8 +33,8 @@ export default class BaseHandler extends EventEmitter implements IHandler {
   /**
    * Handler initialization or data loading.
    */
-  load(): Promise<void> {
-    return Promise.resolve();
+  load(): Promise<Options> {
+    return Promise.resolve({});
   }
 
   /**

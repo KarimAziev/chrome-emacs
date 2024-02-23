@@ -1,4 +1,10 @@
-import type { IHandler, Options, UpdateTextPayload } from '@/handlers/types';
+import {
+  IHandler,
+  Options,
+  UpdateTextPayload,
+  RegisterPayload,
+  SocketPostPayloadMap,
+} from '@/handlers/types';
 
 const NORMAL_CLOSE_CODE = 1000;
 
@@ -69,7 +75,7 @@ class TextSyncer {
   makeTextChangeListener(port: chrome.runtime.Port, handler: IHandler) {
     return () => {
       handler.getValue().then((text: string) => {
-        this.post(port, 'updateText', { text: text });
+        this.post(port, 'updateText', { text });
       });
     };
   }
@@ -89,9 +95,13 @@ class TextSyncer {
     options?: Options,
   ) {
     options = options || {};
-
     handler.getValue().then((text: string) => {
-      const payload: any = { url: url, title: title, text: text };
+      const payload: RegisterPayload = {
+        ...options,
+        url: url,
+        title: title,
+        text: text,
+      };
 
       let extension = options?.extension;
 
@@ -113,8 +123,12 @@ class TextSyncer {
    * @param type - The type of the message.
    * @param payload - The payload of the message.
    */
-  post(port: chrome.runtime.Port, type: string, payload: any) {
-    return port.postMessage({ type: type, payload: payload });
+  post<T extends keyof SocketPostPayloadMap>(
+    port: chrome.runtime.Port,
+    type: T,
+    payload: SocketPostPayloadMap[T],
+  ) {
+    return port.postMessage({ type, payload });
   }
 }
 
