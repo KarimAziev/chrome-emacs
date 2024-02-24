@@ -1,3 +1,25 @@
+export function getCssSelector(el: Element): string | undefined {
+  let path: string[] = [];
+  while (el.nodeType === Node.ELEMENT_NODE) {
+    let selector: string = el.nodeName.toLowerCase();
+    if (el.id) {
+      selector += '#' + el.id;
+      path.unshift(selector);
+      break;
+    } else {
+      let sib: Element | null = el;
+      let nth: number = 1;
+      while ((sib = sib.previousElementSibling)) {
+        if (sib.nodeName.toLowerCase() === selector) nth++;
+      }
+      if (nth !== 1) selector += `:nth-of-type(${nth})`;
+    }
+    path.unshift(selector);
+    el = el.parentNode as Element;
+  }
+  return path.length ? path.join(' > ') : undefined;
+}
+
 export const findAncestorWithClass = <Elem extends HTMLElement>(
   elem: Elem,
   className: string,

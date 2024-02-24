@@ -1,5 +1,7 @@
-const WS_PORT: number = 64292;
-const WS_URL: string = `ws://localhost:${WS_PORT}`;
+import { ClosedMessagePayload } from '@/handlers/types';
+
+export const WS_PORT: number = 64292;
+export const WS_URL: string = `ws://localhost:${WS_PORT}`;
 
 /**
  * Represents a bridge for WebSocket communication.
@@ -41,10 +43,16 @@ class WSBridge {
     };
 
     ws.onclose = (evt: CloseEvent) => {
+      const payload: ClosedMessagePayload = {
+        code: evt.code,
+        reason: evt.reason,
+        wasClean: evt.wasClean,
+      };
+
       this.stopKeepAlive();
       port.postMessage({
         type: 'closed',
-        payload: { code: evt.code, reason: evt.reason },
+        payload,
       });
       port.disconnect();
       this.webSocket = null;

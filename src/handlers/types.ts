@@ -98,7 +98,13 @@ export type SocketPostPayloadMap = {
 };
 
 export type PostToInjectedPayloadMap = {
-  initialize: { name: string };
+  initialize: { name: string; selector?: string };
   setValue: UpdateTextPayload;
   getValue: undefined;
 };
+
+export interface ClosedMessagePayload {
+  code: CloseEvent['code'];
+  reason: CloseEvent['reason'];
+  wasClean: CloseEvent['wasClean'];
+}

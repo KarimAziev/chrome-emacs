@@ -4,9 +4,14 @@ import {
   UpdateTextPayload,
   RegisterPayload,
   SocketPostPayloadMap,
+  ClosedMessagePayload,
 } from '@/handlers/types';
+import { messager } from '@/content-script-tools/message';
+import { WS_URL } from '@/background-tools/ws-bridge';
 
-const NORMAL_CLOSE_CODE = 1000;
+const errorMessageByCode: { [key: ClosedMessagePayload['code']]: string } = {
+  1006: `Failed to connect to server ${WS_URL}`,
+};
 
 class TextSyncer {
   /**
@@ -60,10 +65,11 @@ class TextSyncer {
    * @param _handler - The handler instance.
    * @param payload - The payload containing the close code and reason.
    */
-  closed(_handler: any, payload: { code: number; reason: string }) {
-    const code = payload.code;
-    if (code !== NORMAL_CLOSE_CODE) {
-      console.warn(`Chrome Emacs connection was closed with code ${code}`);
+  closed(_handler: any, payload: ClosedMessagePayload) {
+    const msg = errorMessageByCode[payload.code];
+
+    if (msg) {
+      messager.error(msg, { title: 'Chrome Emacs: ' });
     }
   }
   /**

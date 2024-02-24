@@ -30,18 +30,25 @@ window.addEventListener('message', function (message: MessageEvent) {
   if (!isSourceTrusted(message.source)) {
     return;
   }
+
   if (message.data.type === 'initialize') {
     const handlerName = message.data.payload.name;
+    const selector: string = message.data.payload.selector;
+
+    const selectorEl = selector ? this.document.querySelector(selector) : null;
+
+    const handlerElem = selectorEl || this.document.activeElement;
     const Handler = injectedHandlerFactory.getHandler(handlerName);
 
     if (!Handler) {
       console.error(`Chrome Emacs received bad handler name: ${handlerName}`);
       return;
     }
-
-    const activeElement = document.activeElement as HTMLElement;
-    if (activeElement) {
-      const handler = new Handler(activeElement, message.data.uuid);
+    if (handlerElem) {
+      const handler = new Handler(
+        handlerElem as HTMLElement,
+        message.data.uuid,
+      );
       handler.setup().then(() => {
         handlers.push(handler);
         handler.postReady();
