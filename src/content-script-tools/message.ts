@@ -86,6 +86,7 @@ export class MessageHandler {
     };
     messageBox.innerHTML = html;
     messageBox.prepend(cross);
+
     return addStyle(messageBox, { ...defaultStyle, ...params?.style });
   }
 

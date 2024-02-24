@@ -32,6 +32,7 @@ class WSBridge {
     this.webSocket = ws;
 
     ws.onopen = () => {
+      chrome.action.setIcon({ path: '../images/icon-19.png' });
       this.startKeepAlive();
       while (queue.length > 0) {
         ws.send(queue.shift() as string);
@@ -43,6 +44,7 @@ class WSBridge {
     };
 
     ws.onclose = (evt: CloseEvent) => {
+      chrome.action.setIcon({ path: '../images/icon-19-inactive.png' });
       const payload: ClosedMessagePayload = {
         code: evt.code,
         reason: evt.reason,

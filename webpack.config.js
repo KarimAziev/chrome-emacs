@@ -8,6 +8,7 @@ module.exports = {
   entry: {
     'service-worker': ['./src/service-worker.ts'],
     'content-script': ['./src/content-script.ts'],
+    'query-edit': ['./src/query-edit.ts'],
     injected: ['./src/injected.ts'],
   },
   output: {
