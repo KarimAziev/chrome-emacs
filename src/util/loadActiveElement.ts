@@ -5,7 +5,6 @@ import { loadHandler } from '@/util/loadHandler';
 
 export const loadActiveElementHandler = async () => {
   const activeEl = document?.activeElement;
-  console.log('activeEl', activeEl?.tagName);
   if (
     !activeEl ||
     (isElementTag('body', activeEl) && !isContentEditableElement(activeEl))

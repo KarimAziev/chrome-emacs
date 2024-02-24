@@ -30,7 +30,6 @@ class InjectedAceHandler extends BaseInjectedHandler<HTMLElement> {
       (ace as any).config.loadModule(
         'ace/ext/modelist',
         (m: { modes: AceMode[] }) => {
-          console.log('modes', m.modes);
           this.modes = m.modes;
           this.loaded = true;
           resolve();
