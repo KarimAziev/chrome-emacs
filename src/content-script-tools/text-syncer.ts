@@ -80,8 +80,8 @@ class TextSyncer {
    */
   makeTextChangeListener(port: chrome.runtime.Port, handler: IHandler) {
     return () => {
-      handler.getValue().then((text: string) => {
-        this.post(port, 'updateText', { text });
+      handler.getValue().then((data) => {
+        this.post(port, 'updateText', data);
       });
     };
   }
@@ -101,15 +101,17 @@ class TextSyncer {
     options?: Options,
   ) {
     options = options || {};
-    handler.getValue().then((text: string) => {
+
+    handler.getValue().then((data) => {
       const payload: RegisterPayload = {
         ...options,
+        ...data,
         url: url,
         title: title,
-        text: text,
+        text: data.text,
       };
 
-      let extension = options?.extension;
+      const extension = options?.extension;
 
       if (extension) {
         const normalizeExtension = (ext: string) =>

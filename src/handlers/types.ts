@@ -36,7 +36,7 @@ export interface IHandler {
    * Retrieves the currently set value.
    * @returns A promise that resolves with the current value.
    */
-  getValue(): Promise<string>;
+  getValue(): Promise<UpdateTextPayload>;
 
   /**
    * Binds a change event listener.

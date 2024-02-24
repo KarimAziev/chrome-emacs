@@ -50,7 +50,7 @@ export default class BaseHandler extends EventEmitter implements IHandler {
    * Retrieves the current value.
    * @returns A promise that is rejected as method is not implemented.
    */
-  getValue(): Promise<string> {
+  getValue(): Promise<UpdateTextPayload> {
     return Promise.reject('Method not implemented.');
   }
   /**

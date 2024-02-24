@@ -53,8 +53,10 @@ export default class BaseInjectedHandler<Elem extends Element> {
    * Handles 'getValue' messages by posting the current value to the injector.
    */
   onGetValue(): void {
+    const position = this.getPosition();
     this.postToInjector('value', {
       text: this.getValue(),
+      ...position,
     });
   }
 

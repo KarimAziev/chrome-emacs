@@ -72,17 +72,17 @@ export default class InjectorHandler extends BaseHandler {
     super.setValue(value, options);
   }
 
-  async getValue(): Promise<string> {
+  async getValue() {
     this.postToInjected('getValue');
 
-    return new Promise<string>((resolve, reject) => {
+    return new Promise<UpdateTextPayload>((resolve, reject) => {
       if (this._getValueCallback) {
         this.removeListener('value', this._getValueCallback);
       }
 
       this._getValueCallback = (payload: UpdateTextPayload) => {
         if (typeof payload.text === 'string') {
-          resolve(payload.text);
+          resolve(payload);
         } else {
           reject(
             new Error(
