@@ -78,6 +78,7 @@ export class MessageHandler {
       zIndex: '9999',
       fontSize: '16px',
       transition: 'all 0.2s',
+      translate: '-50% 0',
       left: '50%',
       top: '-100px',
       backgroundColor: 'rgb(229, 246, 253)',
