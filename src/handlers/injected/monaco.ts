@@ -4,6 +4,7 @@ import { findAncestorWithClass } from '@/util/dom';
 import { fileExtensionsByLanguage } from '@/handlers/config/monaco';
 import { isFunction, isString, isNumber } from '@/util/guard';
 import { UpdateTextPayload } from '@/handlers/types';
+import { replaceNonBreakingSpaces } from '@/util/string';
 
 declare global {
   /**
@@ -130,24 +131,31 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
 
       if (this.focusedEditor?.setValue) {
         this.focusedEditor.setValue(value);
-
-        const position = isNumber(options?.lineNumber) &&
-          isNumber(options?.column) && {
-            lineNumber: options.lineNumber,
-            column: options.column,
-          };
-
-        if (position && this.focusedEditor?.setPosition) {
-          this.focusedEditor.setPosition(position);
-        }
-
-        if (position && this.focusedEditor?.revealPositionInCenter) {
-          this.focusedEditor.revealPositionInCenter(position);
-        }
-      } else if (this.elem) {
+      } else {
         this.elem.value = value;
       }
+
+      this.setPosition(options);
     });
+  }
+
+  private setPosition(options?: UpdateTextPayload) {
+    const lineNumber = options?.lineNumber;
+    const column = options?.column;
+    if (isNumber(lineNumber) && isNumber(column)) {
+      const position = {
+        lineNumber: lineNumber,
+        column: column,
+      };
+
+      if (this.focusedEditor?.setPosition) {
+        this.focusedEditor.setPosition(position);
+      }
+
+      if (this.focusedEditor?.revealPositionInCenter) {
+        this.focusedEditor.revealPositionInCenter(position);
+      }
+    }
   }
 
   /**
@@ -156,8 +164,8 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
    */
   private findAncestorWithMonacoClass() {
     return (
-      findAncestorWithClass(this.elem, 'editor-instance') ||
-      findAncestorWithClass(this.elem, 'monaco-editor')
+      this.getParentElement() ||
+      findAncestorWithClass(this.elem, 'editor-instance')
     );
   }
 
@@ -173,7 +181,9 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
     } else if (!this.elem) {
       return '';
     } else {
-      return this.findAncestorWithMonacoClass()?.textContent || this.elem.value;
+      return replaceNonBreakingSpaces(
+        this.findAncestorWithMonacoClass()?.textContent || this.elem.value,
+      );
     }
   }
 
@@ -197,7 +207,9 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
   }
 
   getPosition() {
-    const positionData = this.focusedEditor?.getPosition();
+    const positionData =
+      this.focusedEditor?.getPosition() || this.getFallbackPosition();
+
     return {
       lineNumber: positionData?.lineNumber || 1,
       column: positionData?.column || 1,
@@ -248,6 +260,132 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
     if (this.changeListener?.dispose) {
       this.changeListener.dispose();
     }
+  }
+  /**
+   * Retrieves the closest parent element that matches the Monaco editor's container.
+   * This is useful for operations requiring reference to the editor's DOM structure, such as
+   * finding the cursor or line elements.
+   *
+   * @returns The found Monaco editor container element, or undefined if not found.
+   */
+  private getParentElement() {
+    return this.elem?.closest('.monaco-editor');
+  }
+
+  /**
+   * Provides a fallback position object with `lineNumber` and `column` when
+   * the Monaco editor is unable to provide it directly, typically when the editor
+   * hasn't fully initialized or in unusual state conditions. It estimates these
+   * values based on the cursor's current position.
+   *
+   * @returns An object with `lineNumber` and `column`, estimated based on the cursor's current position.
+   */
+  private getFallbackPosition() {
+    const lineNumber = this.estimateCurrentLineNumberByCursor();
+
+    if (lineNumber) {
+      const column = this.estimateCurrentColumnByCursor(lineNumber);
+      return {
+        lineNumber,
+        column,
+      };
+    }
+  }
+  /**
+   * Estimates the line number in the editor where the cursor is currently positioned.
+   * This method finds the closest line to the cursor based on the vertical positioning
+   * of the cursor element within the Monaco editor's content.
+   *
+   * @returns The estimated line number where the cursor is positioned, or null if it cannot be determined.
+   */
+  private estimateCurrentLineNumberByCursor() {
+    const parentEl = this.getParentElement();
+    const cursorEl = parentEl?.querySelector('.cursor');
+    if (!cursorEl || !parentEl) {
+      return;
+    }
+    const cursorRect = cursorEl.getBoundingClientRect();
+
+    // Find all line elements in the editor
+    const lineElements = Array.from(
+      parentEl.querySelectorAll('.view-lines .view-line'),
+    );
+
+    if (lineElements.length === 0) {
+      return null;
+    }
+    const lineElementsSorted = lineElements.sort(
+      (a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top,
+    );
+    // Iterate over sorted line elements to find the one nearest to the cursor
+    let nearestDistance = Infinity;
+    let nearestIdx: number | null = null;
+    for (let i = 0; i < lineElementsSorted.length; i++) {
+      const lineEl = lineElementsSorted[i];
+      const lineRect = lineEl.getBoundingClientRect();
+
+      // Using vertical distance primarily since we're interested in lines
+      const distance = Math.abs(cursorRect.top - lineRect.top);
+
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestIdx = i + 1;
+      }
+    }
+
+    return nearestIdx;
+  }
+
+  /**
+   * Estimates the column number where the cursor is currently located within a given line.
+   * This method relies on the visual positioning of the cursor element within the Monaco editor,
+   * taking into consideration the tab size and the actual content up to the cursor's position.
+   *
+   * @param lineNumber - The line number for which to estimate the column.
+   * @returns The estimated column number where the cursor is located.
+   */
+  private estimateCurrentColumnByCursor(lineNumber: number) {
+    const parentEl = this.getParentElement();
+    const cursorEl = parentEl?.querySelector('.cursor');
+    if (!cursorEl || !parentEl) {
+      return 1;
+    }
+    const cursorRect = cursorEl.getBoundingClientRect();
+    const lineElement = parentEl.querySelector(
+      `.view-lines .view-line:nth-child(${lineNumber})`,
+    );
+    if (!lineElement) {
+      return 1;
+    }
+    const lineRect = lineElement.getBoundingClientRect();
+    const cursorPositionWithinLine = cursorRect.left - lineRect.left;
+
+    // Use tabSize from the model's options
+    const options = this.model?.getOptions();
+    const tabSize = options?.tabSize || 4;
+
+    // Account for tabs in the content up to the cursor position
+    const contentUpToCursor = (
+      this.model?.getLineContent(lineNumber) || ''
+    ).substring(0, lineNumber);
+    const numberOfTabsUpToCursor = (contentUpToCursor.match(/\t/g) || [])
+      .length;
+    const tabAdjustedPosition =
+      cursorPositionWithinLine +
+      tabSize *
+        numberOfTabsUpToCursor *
+        (lineRect.width / contentUpToCursor.length);
+
+    let estimatedColumn =
+      Math.floor(
+        tabAdjustedPosition / (lineRect.width / contentUpToCursor.length),
+      ) + 1;
+
+    // Ensure the estimated column does not exceed the max column for the line
+    const maxColumn = this.model?.getLineMaxColumn(lineNumber) || 1;
+    estimatedColumn = Math.min(estimatedColumn, maxColumn);
+
+    return estimatedColumn;
   }
 }
 

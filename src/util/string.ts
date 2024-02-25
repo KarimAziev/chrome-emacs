@@ -12,3 +12,6 @@ export const htmlEscape = <T>(s: T) =>
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
     : s;
+
+export const replaceNonBreakingSpaces = <T>(s: T, rep = ' ') =>
+  isString(s) ? s.replace(/\u00A0/g, rep) : s;
