@@ -1,54 +1,71 @@
-type PickStringProperties<T> = {
-  [K in keyof T as T[K] extends string ? K : never]: T[K];
-};
+import { animate, addStyle } from '@/util/dom';
 
-export type MessageStyle = Partial<PickStringProperties<CSSStyleDeclaration>>;
-
-interface MessageItemParams {
+export interface MessageItemParams {
   title?: string;
-  text?: string | string[];
-  style?: MessageStyle;
+  text?: string | string | HTMLElement | HTMLElement[];
+  style?: Omit<
+    Partial<{
+      [K in keyof CSSStyleDeclaration as CSSStyleDeclaration[K] extends string
+        ? K
+        : never]: CSSStyleDeclaration[K];
+    }>,
+    'top'
+  >;
   delay?: number;
   persist?: true;
-  type?: keyof typeof extraStyleColors;
+  type?: keyof typeof messageStyleByType;
 }
 
-const extraStyleColors = {
+export type MessageParams = Omit<MessageItemParams, 'text' | 'type'>;
+
+const HINT_ATTRIBUTE_NAME = 'chrome-emacs-message';
+
+const messageStyleByType = {
   error: {
     backgroundColor: 'rgb(253, 237, 237)',
     color: 'rgb(95, 33, 32)',
-    borderLeft: `6px solid #fa8072`,
+    borderLeft: `0.375rem solid #fa8072`,
   },
   success: {
     color: 'rgb(30, 70, 32)',
     backgroundColor: '#ddffdd',
-    borderLeft: `6px solid #04AA6D`,
+    borderLeft: `0.375rem solid #04AA6D`,
   },
-};
-
-const addStyle = <Elem extends HTMLElement>(
-  elem: Elem,
-  style: MessageStyle,
-) => {
-  (Object.keys(style) as (keyof MessageStyle)[]).forEach((key) => {
-    const value = style[key];
-    if (value) {
-      elem.style[key] = value;
-    }
-  });
-  return elem;
+  info: {},
 };
 
 export class MessageHandler {
   messages: HTMLElement[];
 
-  constructor() {
-    this.messages = [];
+  public error(text: MessageItemParams['text'], params?: MessageParams) {
+    this.show({ ...params, type: 'error', text: text });
   }
 
-  private mapContent(title?: string, text?: string | string[]): string {
+  public success(text: MessageItemParams['text'], params?: MessageParams) {
+    this.show({
+      ...params,
+      type: 'success',
+      text: text,
+    });
+  }
+
+  public info(text: MessageItemParams['text'], params?: MessageParams) {
+    this.show({ ...params, text: text });
+  }
+
+  constructor() {
+    this.messages = Array.from(
+      document.querySelectorAll<HTMLElement>(`[${HINT_ATTRIBUTE_NAME}]`),
+    );
+  }
+
+  private mapContent(title?: string, text?: MessageItemParams['text']): string {
     const lines = !text ? [] : Array.isArray(text) ? text : [text];
-    const content = lines.map((l) => `<div>${l}</div>`).join('');
+    const content = lines
+      .map((l) =>
+        l instanceof HTMLElement ? `${l.innerHTML}` : `<div>${l}</div>`,
+      )
+      .join('');
     return [title ? `<div><strong>${title}</strong></div>` : '', content].join(
       '',
     );
@@ -56,35 +73,42 @@ export class MessageHandler {
 
   private createMessageBox(
     html: string,
-    params?: { onRemove?: (msg: HTMLElement) => void; style?: MessageStyle },
+    params?: {
+      onRemove?: (msg: HTMLElement) => void;
+      style?: MessageItemParams['style'];
+    },
   ): HTMLElement {
     const messageBox = document.createElement('div');
+    messageBox.setAttribute(HINT_ATTRIBUTE_NAME, 'message');
     const cross = document.createElement('button');
     cross.innerHTML = '&times;';
+
     cross.onclick = () => {
       if (params?.onRemove) {
         params.onRemove(messageBox);
       }
       messageBox.remove();
     };
-    cross.style.cssText = `color: inherit; position: absolute; right: 1px; top: 1px; background: transparent; border: 0px; font-weight: bold; cursor: pointer; transition: 0.3s;`;
-    const defaultStyle: MessageStyle = {
-      borderRadius: '1px',
-      minWidth: '300px',
-      maxWidth: '400px',
+    cross.style.cssText = `color: inherit; position: absolute; right: 0.0625rem; top: 0.0625rem; background: transparent; border: 0rem; font-weight: bold; cursor: pointer; transition: 0.3s;`;
+
+    const defaultStyle = {
+      borderRadius: '0.0625rem',
+      minWidth: '18.75rem',
+      maxWidth: '25rem',
       overflowWrap: 'break-word',
-      padding: '5px 20px',
+      padding: '0.3125rem 1.25rem',
       position: 'fixed',
       zIndex: '9999',
-      fontSize: '16px',
+      fontSize: '1rem',
       transition: 'all 0.2s',
       translate: '-50% 0',
       left: '50%',
-      top: '-100px',
+      top: '-6.25rem',
       backgroundColor: 'rgb(229, 246, 253)',
       color: 'rgb(1, 67, 97)',
-      borderLeft: '6px solid',
+      borderLeft: '0.375rem solid',
     };
+
     messageBox.innerHTML = html;
     messageBox.prepend(cross);
 
@@ -102,6 +126,7 @@ export class MessageHandler {
         addStyle(el, { top: `${newValue}px` });
       });
     }
+
     if (msg.parentNode) {
       msg.parentNode.removeChild(msg);
     }
@@ -109,26 +134,30 @@ export class MessageHandler {
   };
 
   private scheduleRemove(msg: HTMLElement, delay: number) {
-    setTimeout(() => this.removeMessage(msg), delay);
+    const animationParams: Parameters<typeof animate>[0] = {
+      duration: 500,
+      timing: (timeFraction) => timeFraction,
+      draw(progress) {
+        const rectangle = msg.getBoundingClientRect();
+        const elTop = parseFloat(msg.style.top);
+
+        const height = rectangle.height;
+        const newValue = elTop - 10 - height - 10;
+        msg.style.top = `${newValue}px`;
+        msg.style.opacity = String(1 - progress);
+      },
+    };
+    setTimeout(() => {
+      animate(animationParams);
+      setTimeout(() => this.removeMessage(msg), animationParams.duration);
+    }, delay - animationParams.duration);
   }
 
-  error(text: string | string[], params?: Omit<MessageItemParams, 'text'>) {
-    this.show({ ...params, type: 'error', text: text });
-  }
-
-  success(text: string | string[], params?: Omit<MessageItemParams, 'text'>) {
-    this.show({
-      ...params,
-      type: 'success',
-      text: text,
-    });
-  }
-  info(text: string | string[], params?: Omit<MessageItemParams, 'text'>) {
-    this.show({ ...params, text: text });
-  }
-
-  show(params: MessageItemParams) {
-    const extraStyle = params.type && extraStyleColors[params.type];
+  private show(params: MessageItemParams) {
+    this.messages = Array.from(
+      document.querySelectorAll<HTMLElement>(`[${HINT_ATTRIBUTE_NAME}]`),
+    );
+    const extraStyle = params.type && messageStyleByType[params.type];
     const msgEl = this.createMessageBox(
       this.mapContent(params.title, params.text),
       {
@@ -136,12 +165,23 @@ export class MessageHandler {
         style: extraStyle,
       },
     );
-    msgEl.style.top = '100px';
+
     document.body.appendChild(msgEl);
+
     this.messages.push(msgEl);
 
+    animate({
+      duration: 200,
+      timing: (timeFraction) => Math.pow(timeFraction, 2),
+      draw(progress) {
+        msgEl.style.top = progress * 100 + 'px';
+      },
+    });
+
     const rectangle = msgEl.getBoundingClientRect();
+
     const height = rectangle.height;
+
     if (this.messages.length > 1) {
       this.messages.slice(0, -1).forEach((el) => {
         const elTop = parseFloat(el.style.top);
@@ -149,6 +189,7 @@ export class MessageHandler {
         addStyle(el, { top: `${newValue}px` });
       });
     }
+
     if (!params.persist) {
       this.scheduleRemove(msgEl, params.delay || 5000);
     }
