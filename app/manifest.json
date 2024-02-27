@@ -1,7 +1,7 @@
 {
   "name": "__MSG_appName__",
   "short_name": "__MSG_appShortName__",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "manifest_version": 3,
   "minimum_chrome_version": "116",
   "description": "__MSG_appDescription__",
@@ -37,12 +37,23 @@
       "description": "Select and edit element"
     }
   },
-  "permissions": ["activeTab", "scripting"],
-  "host_permissions": ["http://*/*", "https://*/*"],
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
   "web_accessible_resources": [
     {
-      "resources": ["scripts/injected.js"],
-      "matches": ["http://*/*", "https://*/*"]
+      "resources": [
+        "scripts/injected.js"
+      ],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ]
     }
   ]
 }
