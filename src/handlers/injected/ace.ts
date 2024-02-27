@@ -1,4 +1,6 @@
 import BaseInjectedHandler from '@/handlers/injected/base';
+import { UpdateTextPayload } from '@/handlers/types';
+import { isNumber } from '@/util/guard';
 
 interface AceMode {
   mode: string;
@@ -20,15 +22,33 @@ class InjectedAceHandler extends BaseInjectedHandler<HTMLElement> {
       if (this.elem.parentElement) {
         this.editor = ace.edit(this.elem.parentElement);
       }
-
       this.editor.$blockScrolling = Infinity;
-      return resolve();
+      if (!(ace as any).config || !(ace as any).config.loadModule) {
+        return resolve();
+      }
+
+      (ace as any).config.loadModule(
+        'ace/ext/modelist',
+        (m: { modes: AceMode[] }) => {
+          this.modes = m.modes;
+          this.loaded = true;
+          resolve();
+        },
+      );
+      // NOTE: no callback when loadModule fails, so add a timeout
+      setTimeout(() => {
+        if (!this.loaded) {
+          resolve();
+        }
+      }, 3000);
     });
   }
 
   getExtension() {
     if (!this.modes) {
-      return null;
+      const mode = this.editor?.session?.getMode();
+
+      return (mode as unknown as { $id: string })?.$id?.split('/').pop();
     }
     const session = this.editor.getSession();
     const currentMode =
@@ -48,8 +68,29 @@ class InjectedAceHandler extends BaseInjectedHandler<HTMLElement> {
     return this.editor.getValue();
   }
 
-  setValue(text: string) {
-    this.executeSilenced(() => this.editor.setValue(text, 1));
+  getPosition() {
+    const positionData = this.editor?.getCursorPosition();
+    return {
+      lineNumber: positionData?.row + 1 || 1,
+      column: positionData?.column + 1 || 1,
+    };
+  }
+
+  setPosition(options?: UpdateTextPayload) {
+    if (
+      isNumber(options?.column) &&
+      isNumber(options?.lineNumber) &&
+      this.editor?.gotoLine
+    ) {
+      this.editor.gotoLine(options.lineNumber, options.column - 1);
+    }
+  }
+
+  setValue(text: string, options?: UpdateTextPayload) {
+    this.executeSilenced(() => {
+      this.editor.setValue(text, 1);
+      this.setPosition(options);
+    });
   }
 
   bindChange(f: (...args: any[]) => void) {

@@ -1,5 +1,10 @@
-const WS_PORT: number = 64292;
-const WS_URL: string = `ws://localhost:${WS_PORT}`;
+import type { ClosedMessagePayload } from '@/handlers/types';
+
+export const WS_PORT: number = 64292;
+export const WS_URL: string = `ws://localhost:${WS_PORT}`;
+
+// 10 seconds
+const KEEP_ALIVE_INTERVAL = 10 * 1000;
 
 /**
  * Represents a bridge for WebSocket communication.
@@ -16,7 +21,9 @@ class WSBridge {
     const queue: string[] = [];
     const ws: WebSocket = this.makeWS(port, queue);
     port.onMessage.addListener((msg: any) => this.sendMessage(ws, queue, msg));
-    port.onDisconnect.addListener(() => ws.close());
+    port.onDisconnect.addListener(() => {
+      ws.close(1000);
+    });
   }
 
   /**
@@ -30,21 +37,31 @@ class WSBridge {
     this.webSocket = ws;
 
     ws.onopen = () => {
-      this.startKeepAlive();
+      chrome.action.setIcon({ path: '../images/icon-19.png' });
+      this.startKeepAliveLoop();
       while (queue.length > 0) {
         ws.send(queue.shift() as string);
       }
     };
 
     ws.onmessage = (wsMsg: MessageEvent) => {
+      this.startKeepAliveLoop();
       port.postMessage(JSON.parse(wsMsg.data));
     };
 
     ws.onclose = (evt: CloseEvent) => {
       this.stopKeepAlive();
+      chrome.action.setIcon({ path: '../images/icon-19-inactive.png' });
+
+      const payload: ClosedMessagePayload = {
+        code: evt.code,
+        reason: evt.reason,
+        wasClean: evt.wasClean,
+      };
+
       port.postMessage({
         type: 'closed',
-        payload: { code: evt.code, reason: evt.reason },
+        payload,
       });
       port.disconnect();
       this.webSocket = null;
@@ -54,19 +71,29 @@ class WSBridge {
   }
 
   /**
-   * Starts the keep-alive procedure by sending a heartbeat every 20 seconds.
+   * Starts the keep-alive procedure to maintain the WebSocket connection.
+   * This method ensures a keep-alive message is sent over the WebSocket connection
+   * at regular intervals specified by KEEP_ALIVE_INTERVAL. If an existing keep-alive
+   * timeout is present, it is cleared and reset to ensure only one keep-alive cycle
+   * runs at any given time. If the WebSocket connection is active, a 'keepalive'
+   * message is sent; if sending fails, the keep-alive procedure is stopped.
    */
-  private startKeepAlive(): void {
+  private startKeepAliveLoop(): void {
     if (this.keepAliveIntervalId) {
-      clearInterval(this.keepAliveIntervalId);
+      clearTimeout(this.keepAliveIntervalId);
     }
-    this.keepAliveIntervalId = setInterval(() => {
+
+    this.keepAliveIntervalId = setTimeout(() => {
       if (this.webSocket) {
-        this.webSocket.send(JSON.stringify({ type: 'keepalive' }));
-      } else {
-        this.stopKeepAlive();
+        try {
+          this.webSocket.send(JSON.stringify({ type: 'keepalive' }));
+          this.startKeepAliveLoop();
+        } catch (error) {
+          console.error('Failed to send keepalive message:', error);
+          this.stopKeepAlive();
+        }
       }
-    }, 20 * 1000); // 20 seconds
+    }, KEEP_ALIVE_INTERVAL);
   }
 
   /**
@@ -90,7 +117,11 @@ class WSBridge {
     if (ws.readyState === WebSocket.CONNECTING) {
       queue.push(message);
     } else if (ws.readyState === WebSocket.OPEN) {
-      ws.send(message);
+      try {
+        ws.send(message);
+      } catch (error) {
+        console.error('Failed to send message:', error);
+      }
     }
   }
 
@@ -98,11 +129,11 @@ class WSBridge {
    * Closes the WebSocket connection if it exists and stops the keep-alive messages.
    */
   disconnect(): void {
+    this.stopKeepAlive();
     if (this.webSocket === null) {
       return;
     }
     this.webSocket.close();
-    this.stopKeepAlive();
     this.webSocket = null;
   }
 }

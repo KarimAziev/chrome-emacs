@@ -20,3 +20,19 @@ chrome.action.onClicked.addListener((tab) => {
 chrome.runtime.onConnect.addListener((port) => {
   wsBridge.openConnection(port);
 });
+
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command === 'query-edit') {
+    const tabs = await chrome.tabs.query({ currentWindow: true });
+
+    const activeTab = tabs.find((tab) => {
+      return tab.active;
+    });
+    if (activeTab?.id) {
+      chrome.scripting.executeScript({
+        target: { tabId: activeTab.id },
+        files: ['scripts/query-edit.js'],
+      });
+    }
+  }
+});

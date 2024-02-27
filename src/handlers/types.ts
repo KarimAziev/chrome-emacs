@@ -36,7 +36,7 @@ export interface IHandler {
    * Retrieves the currently set value.
    * @returns A promise that resolves with the current value.
    */
-  getValue(): Promise<string>;
+  getValue(): Promise<UpdateTextPayload>;
 
   /**
    * Binds a change event listener.
@@ -98,7 +98,13 @@ export type SocketPostPayloadMap = {
 };
 
 export type PostToInjectedPayloadMap = {
-  initialize: { name: string };
+  initialize: { name: string; selector?: string };
   setValue: UpdateTextPayload;
   getValue: undefined;
 };
+
+export interface ClosedMessagePayload {
+  code: CloseEvent['code'];
+  reason: CloseEvent['reason'];
+  wasClean: CloseEvent['wasClean'];
+}

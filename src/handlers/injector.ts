@@ -6,6 +6,7 @@ import {
   Options,
   PostToInjectedPayloadMap,
 } from '@/handlers/types';
+import { getCssSelector } from '@/util/dom';
 
 /**
  * A specialized handler extending BaseHandler for injecting and communicating with scripts.
@@ -49,11 +50,16 @@ export default class InjectorHandler extends BaseHandler {
    */
 
   async load() {
-    this.injectScript(() =>
-      this.postToInjected('initialize', { name: this.name }),
-    );
-
-    return await new Promise<Options>((resolve) => this.once('ready', resolve));
+    const elemSelector = getCssSelector(this.elem);
+    return new Promise<Options>((resolve) => {
+      this.injectScript(() => {
+        this.postToInjected('initialize', {
+          name: this.name,
+          selector: elemSelector,
+        });
+        this.once('ready', resolve);
+      });
+    });
   }
 
   /**
@@ -66,17 +72,17 @@ export default class InjectorHandler extends BaseHandler {
     super.setValue(value, options);
   }
 
-  async getValue(): Promise<string> {
+  async getValue() {
     this.postToInjected('getValue');
 
-    return new Promise<string>((resolve, reject) => {
+    return new Promise<UpdateTextPayload>((resolve, reject) => {
       if (this._getValueCallback) {
         this.removeListener('value', this._getValueCallback);
       }
 
       this._getValueCallback = (payload: UpdateTextPayload) => {
         if (typeof payload.text === 'string') {
-          resolve(payload.text);
+          resolve(payload);
         } else {
           reject(
             new Error(
@@ -97,7 +103,9 @@ export default class InjectorHandler extends BaseHandler {
    */
   private injectScript(onload?: () => void): void {
     if ((this.document as any).atomicScriptInjected) {
-      if (onload) onload();
+      if (onload) {
+        onload();
+      }
       return;
     }
 

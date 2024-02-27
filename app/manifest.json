@@ -7,7 +7,8 @@
   "description": "__MSG_appDescription__",
   "icons": {
     "16": "images/icon-16.png",
-    "128": "images/icon-128.png"
+    "128": "images/icon-128.png",
+    "19": "images/icon-19.png"
   },
   "default_locale": "en",
   "background": {
@@ -15,28 +16,33 @@
   },
   "action": {
     "default_icon": {
-      "19": "images/icon-19.png",
-      "38": "images/icon-38.png"
+      "19": "images/icon-19-inactive.png",
+      "38": "images/icon-38-inactive.png"
     },
     "default_title": "Chrome Emacs"
   },
-  "permissions": [
-    "activeTab",
-    "scripting"
-  ],
-  "host_permissions": [
-    "http://*/*",
-    "https://*/*"
-  ],
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+H",
+        "mac": "Command+Shift+H"
+      },
+      "description": "Edit currently focused element"
+    },
+    "query-edit": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+I",
+        "mac": "Command+Shift+I"
+      },
+      "description": "Select and edit element"
+    }
+  },
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": ["http://*/*", "https://*/*"],
   "web_accessible_resources": [
     {
-      "resources": [
-        "scripts/injected.js"
-      ],
-      "matches": [
-        "http://*/*",
-        "https://*/*"
-      ]
+      "resources": ["scripts/injected.js"],
+      "matches": ["http://*/*", "https://*/*"]
     }
   ]
 }

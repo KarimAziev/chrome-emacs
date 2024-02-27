@@ -11,7 +11,7 @@ class ContentEditableHandler extends BaseHandler {
    */
   getValue() {
     const result = this.extractText(this.elem, { noLinebreak: false });
-    return Promise.resolve(result);
+    return Promise.resolve({ text: result });
   }
 
   /**
