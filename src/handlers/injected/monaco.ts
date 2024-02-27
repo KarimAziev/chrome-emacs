@@ -109,6 +109,9 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
               (e) => isFunction(e.getModel) && e.getModel() === this.model,
             );
           }
+          if (!this.focusedEditor?.hasTextFocus()) {
+            this.focusedEditor?.focus();
+          }
         }
       } catch (error) {
         throw new Error('Monaco editor is not available.');
@@ -125,12 +128,10 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
    */
   setValue(value: string, options?: UpdateTextPayload) {
     this.executeSilenced(() => {
-      if (this.model) {
-        this.model.setValue(value);
-      }
-
       if (this.focusedEditor?.setValue) {
         this.focusedEditor.setValue(value);
+      } else if (this.model) {
+        this.model.setValue(value);
       } else {
         this.elem.value = value;
       }
@@ -147,7 +148,6 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
         lineNumber: lineNumber,
         column: column,
       };
-
       if (this.focusedEditor?.setPosition) {
         this.focusedEditor.setPosition(position);
       }
