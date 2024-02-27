@@ -9,8 +9,10 @@ import {
 import { messager } from '@/content-script-tools/message';
 import { WS_URL } from '@/background-tools/ws-bridge';
 
-const errorMessageByCode: { [key: ClosedMessagePayload['code']]: string } = {
-  1006: `Failed to connect to server ${WS_URL}`,
+const errorMessageByCode: {
+  [key: ClosedMessagePayload['code']]: Parameters<typeof messager.error>[0];
+} = {
+  1006: `Failed to connect to server: <i>${WS_URL}</i>`,
 };
 
 class TextSyncer {
@@ -22,7 +24,12 @@ class TextSyncer {
    * @param handler - The handler instance managing the text element.
    * @param options - Additional options for text synchronization.
    */
-  linkElem(url: string, title: string, handler: IHandler, options?: Options) {
+  public linkElem(
+    url: string,
+    title: string,
+    handler: IHandler,
+    options?: Options,
+  ) {
     const port = chrome.runtime.connect();
 
     this.register(port, url, title, handler, options);
@@ -41,7 +48,7 @@ class TextSyncer {
    * @param handler - The handler instance managing the text element.
    * @returns A function to be used as the onMessage event listener.
    */
-  makeMessageListener(handler: IHandler) {
+  private makeMessageListener(handler: IHandler) {
     return (msg: any) => {
       if ((this as any)[msg.type]) {
         return (this as any)[msg.type](handler, msg.payload);
@@ -69,6 +76,7 @@ class TextSyncer {
     const msg = errorMessageByCode[payload.code];
 
     if (msg) {
+      console.log('Chrome Emacs: ', payload);
       messager.error(msg, { title: 'Chrome Emacs: ' });
     }
   }
@@ -78,7 +86,7 @@ class TextSyncer {
    * @param handler - The handler instance managing the text element.
    * @returns A function to be used as a change listener.
    */
-  makeTextChangeListener(port: chrome.runtime.Port, handler: IHandler) {
+  private makeTextChangeListener(port: chrome.runtime.Port, handler: IHandler) {
     return () => {
       handler.getValue().then((data) => {
         this.post(port, 'updateText', data);
@@ -93,7 +101,7 @@ class TextSyncer {
    * @param handler - The handler instance managing the text element.
    * @param options - Additional options for the registration.
    */
-  register(
+  private register(
     port: chrome.runtime.Port,
     url: string,
     title: string,
@@ -131,7 +139,7 @@ class TextSyncer {
    * @param type - The type of the message.
    * @param payload - The payload of the message.
    */
-  post<T extends keyof SocketPostPayloadMap>(
+  private post<T extends keyof SocketPostPayloadMap>(
     port: chrome.runtime.Port,
     type: T,
     payload: SocketPostPayloadMap[T],
