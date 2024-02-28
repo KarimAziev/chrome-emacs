@@ -8,7 +8,7 @@
     "description": "The short name of the application"
   },
   "appDescription": {
-    "message": "Allows to edit textareas and contenteditable elements directly in Emacs",
+    "message": "Use Emacs to edit textareas and online editors",
     "description": "The description of the application"
   }
 }
