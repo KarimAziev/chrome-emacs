@@ -28,14 +28,14 @@ jobs:
           VERSION_FILE=version.env
           CURRENT_VERSION=$(jq -r '.version' $DIRECTORY/manifest.json)
           IFS='.' read -ra VERSION <<< "$CURRENT_VERSION"
-          if [[ "${{ github.event.head_commit.message }}" == "major:"* ]]; then
+          if [[ "${{ github.event.head_commit.message }}" =~ ^major: ]]; then
             VERSION[0]=$((VERSION[0]+1))
             VERSION[1]=0
             VERSION[2]=0
-          elif [[ "${{ github.event.head_commit.message }}" == "minor:"* ]]; then
+          elif [[ "${{ github.event.head_commit.message }}" =~ ^minor: ]]; then
             VERSION[1]=$((VERSION[1]+1))
             VERSION[2]=0
-          elif [[ "${{ github.event.head_commit.message }}" == "patch:"* ]]; then
+          elif [[ "${{ github.event.head_commit.message }}" =~ ^patch: ]]; then
             VERSION[2]=$((VERSION[2]+1))
           else
             echo "Commit message does not specify version increment, skipping."
