@@ -11,6 +11,7 @@ After the original Atomic Chrome extension was removed from the Chrome Web Store
 Here are some of the major improvements and changes:
 
 - **Support for the Monaco Editor**: Expanding the range of compatible online editors far beyond the original.
+- **Editable Areas Navigation with Hints**: Introduces an navigation feature where editable areas are overlaid with hints (letters). Pressing the corresponding letter key on the keyboard allows users to swiftly switch focus to those areas, enhancing usability and editing efficiency.
 - **Migration to Chrome Extension Manifest V3**: Guarantees the extension stays compatible with the latest browser versions and meets the current security standards.
 - **Auto-Major Mode Detection**: Automatically configures the most suitable editing mode for any given online editor.
 - **Complete Rewrite in TypeScript**: This enhances the extension's stability, maintainability, and performance.
@@ -39,7 +40,7 @@ Install the [Chrome extension](https://chromewebstore.google.com/detail/chrome-e
 
 #### Emacs Integration
 
-<details><summary> Install the corresponding Emacs package from <a href="https://github.com/KarimAziev/atomic-chrome">this fork</a> (recommended), or original [atomic-chrome](https://github.com/alpha22jp/atomic-chrome) package.
+<details><summary> Install the corresponding Emacs package from <a target="_blank" href="https://github.com/KarimAziev/atomic-chrome">this fork</a> (recommended), or original <a href="https://github.com/alpha22jp/atomic-chrome" target="_blank">atomic-chrome</a> package.
   </summary>
 
 ##### With use-package and straight.el
