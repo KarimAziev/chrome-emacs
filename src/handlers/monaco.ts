@@ -46,10 +46,11 @@ class MonacoHandler extends InjectorHandler {
    * @returns True if the handler can manage the element, otherwise false.
    */
   static canHandle(elem: HTMLTextAreaElement) {
-    return (
-      elem.tagName.toLowerCase() === 'textarea' &&
-      elem.classList.contains('monaco-mouse-cursor-text')
-    );
+    const enabled =
+      elem.tagName?.toLowerCase() === 'textarea' &&
+      elem.closest('.monaco-editor');
+
+    return !!enabled;
   }
 }
 
