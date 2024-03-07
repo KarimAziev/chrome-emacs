@@ -165,6 +165,7 @@ export default class InjectorHandler extends BaseHandler {
    * @param f - The function to remove from the event listener list.
    */
   unbindChange(f: (event: Event) => void): void {
+    this.postToInjected('unload');
     this.removeListener('change', f);
   }
 }

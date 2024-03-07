@@ -1,5 +1,5 @@
 import BaseHandler from '@/handlers/base';
-import { UpdateTextPayload } from '@/handlers/types';
+import { UpdateTextPayload, Options } from '@/handlers/types';
 
 /**
  * Handler specifically designed for managing textareas.
@@ -69,6 +69,28 @@ class TextareaHandler extends BaseHandler {
   getValue() {
     const position = this.getPosition();
     return Promise.resolve({ ...position, text: this.elem.value });
+  }
+
+  getVisualElement(): Element | HTMLElement | null {
+    return this.elem.parentElement;
+  }
+
+  load(): Promise<Options> {
+    const parentEl = this.getVisualElement();
+    const rect = parentEl?.getBoundingClientRect();
+    const screenY = window.screenY;
+
+    const position = this.getPosition();
+    const payload = {
+      ...position,
+      rect,
+    };
+    if (payload?.rect) {
+      payload.rect.y = (rect?.y || 0) + screenY;
+      payload.rect.x = (rect?.x || 0) + window.screenX;
+    }
+
+    return Promise.resolve(payload);
   }
 
   /**

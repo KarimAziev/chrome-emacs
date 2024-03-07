@@ -8,12 +8,15 @@ export interface IPosition {
  */
 export interface UpdateTextPayload extends IPosition {
   text: string;
+  triggerDOMEvent?: boolean;
 }
+
 /**
  * Defines options for handler configuration.
  */
 export interface Options extends IPosition {
   extension?: string | string[] | null;
+  rect?: DOMRect;
 }
 
 /**
@@ -101,6 +104,7 @@ export type PostToInjectedPayloadMap = {
   initialize: { name: string; selector?: string };
   setValue: UpdateTextPayload;
   getValue: undefined;
+  unload: undefined;
 };
 
 export interface ClosedMessagePayload {

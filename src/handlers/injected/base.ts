@@ -54,6 +54,7 @@ export default class BaseInjectedHandler<Elem extends Element> {
    */
   onGetValue(): void {
     const position = this.getPosition();
+
     this.postToInjector('value', {
       text: this.getValue(),
       ...position,
@@ -65,7 +66,7 @@ export default class BaseInjectedHandler<Elem extends Element> {
    *
    * @param payload - The payload containing the text value to be set.
    */
-  onSetValue(payload: { text: string }): void {
+  onSetValue(payload: UpdateTextPayload): void {
     this.setValue(payload.text, payload);
   }
 
@@ -109,12 +110,21 @@ export default class BaseInjectedHandler<Elem extends Element> {
    */
   postReady(): void {
     const extension = this.getExtension();
+    const parentEl = this.getVisualElement();
+    const rect = parentEl?.getBoundingClientRect();
+    const screenY = window.screenY;
+
     const position = this.getPosition();
     const payload = {
       ...position,
       extension,
+      rect,
     };
 
+    if (payload?.rect) {
+      payload.rect.y = (rect?.y || 0) + screenY;
+      payload.rect.x = (rect?.x || 0) + window.screenX;
+    }
     this.postToInjector('ready', payload);
   }
 
@@ -146,6 +156,8 @@ export default class BaseInjectedHandler<Elem extends Element> {
     };
   }
 
+  onUnload(): void {}
+
   /**
    * Posts a message to the injector.
    *
@@ -161,6 +173,11 @@ export default class BaseInjectedHandler<Elem extends Element> {
       uuid: this.uuid,
       payload: payload || {},
     };
+
     window.postMessage(message, location.origin);
+  }
+
+  getVisualElement(): Element | HTMLElement | null {
+    return this.elem.parentElement;
   }
 }

@@ -21,15 +21,7 @@ class MonacoHandler extends InjectorHandler {
    * @param value - The text value to set in the managed textarea.
    */
   setValue(value: string, options: UpdateTextPayload) {
-    this.elem.value = value;
-    // Creates a new input event indicating user input.
-    const event = new Event('input', {
-      bubbles: true,
-      cancelable: true,
-    });
-
-    this.elem.dispatchEvent(event);
-    super.setValue(value, options);
+    super.setValue(value, { ...options, triggerDOMEvent: false });
   }
   /**
    * Retrieves the current value from the textarea through the parent class method.

@@ -5,6 +5,7 @@ import { fileExtensionsByLanguage } from '@/handlers/config/monaco';
 import { isFunction, isString, isNumber } from '@/util/guard';
 import { UpdateTextPayload } from '@/handlers/types';
 import { replaceNonBreakingSpaces } from '@/util/string';
+import { ElementEventMonitor } from '@/util/event-monitor';
 
 declare global {
   /**
@@ -48,6 +49,7 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
    */
   changeListener?: IDisposable;
 
+  elementEventMonitor: ElementEventMonitor;
   /**
    * Constructs an instance of InjectedMonacoHandler.
    * @param elem - The HTMLTextAreaElement to be enhanced.
@@ -108,7 +110,10 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
             this.focusedEditor = editors?.find(
               (e) => isFunction(e.getModel) && e.getModel() === this.model,
             );
+          } else {
+            this.hackMonaco();
           }
+
           if (!this.focusedEditor?.hasTextFocus()) {
             this.focusedEditor?.focus();
           }
@@ -122,20 +127,109 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
   }
 
   /**
+   * The `hackMonaco` method is designed to address a specific challenge encountered when integrating
+   * with the Monaco editor within a dynamic web application environment, such as a Chrome extension.
+   * It provides a workaround for preserving the original functionality and event handlers of the Monaco
+   * editor instances on a webpage, while also allowing for the injection of custom functionality or
+   * enhancements by the extension.
+   *
+   * Motivation:
+   * When integrating external enhancements or tools into web applications with complex
+   * UI components like the Monaco editor, a common issue is the interference between
+   * the original functionalities of the component and the injected behavior. Specifically,
+   * the Monaco editor binds event listeners and other DOM-related states directly to its container
+   * and child elements. Simply recreating the editor to apply custom behaviors or settings can lead
+   * to the loss of these bindings, causing the original page functionality, such as hot reloading
+   * or result display mechanisms, to break or behave unpredictably.
+   *
+   * To address this challenge, the `hackMonaco` method takes a non-destructive approach by carefully
+   * removing only the necessary child elements of the Monaco editor container and then recreating the
+   * editor instance manually. This technique ensures that original event listeners, attached by the
+   * website to the editor's container, remain intact and functional, while still enabling the extension
+   * to introduce its desired enhancements or modifications to the editor instance.
+   *
+   * Implementation Details:
+   * - The method first locates the visual container element of the Monaco editor to be targeted.
+   * - It then proceeds to remove specific child elements of the container that are associated with
+   *   the current Monaco editor instance. This step is crucial for clearing out the existing editor's
+   *   visual state without disrupting any external bindings or event listeners attached to the container itself.
+   * - A new instance of the Monaco editor is then created and attached to the cleaned container, effectively
+   *   replacing the previous instance while preserving the container's original event listeners and DOM state.
+   * - The method also ensures that essential attributes or data properties of the container that might be
+   *   necessary for the functioning of original page scripts are maintained or appropriately handled.
+   *
+   * Usage Note:
+   * This method is specifically tailored for scenarios where maintaining the original functionality of a
+   * webpage or application is paramount, and direct manipulation of the Monaco editor instance is necessary.
+   * It is a sophisticated workaround that should be applied with understanding of the underlying DOM structure
+   * and event handling mechanisms of both the Monaco editor and the host application.
+   *
+   * @remarks It's important to thoroughly test this method across different versions of the Monaco editor
+   * and in various application states to ensure compatibility and stability of the integrated functionality.
+   */
+
+  private hackMonaco() {
+    const el = this.getVisualElement();
+
+    if (el) {
+      const value = this.model?.getValue();
+      const position = this.getFallbackPosition();
+
+      const parent = el?.parentElement;
+
+      parent?.removeAttribute('data-keybinding-context');
+
+      if (parent) {
+        this.elementEventMonitor = new ElementEventMonitor(parent);
+        this.elementEventMonitor.start();
+
+        parent?.removeChild(el);
+
+        this.focusedEditor = window.monaco.editor.create(
+          parent as HTMLElement,
+          {
+            model: this.model,
+            automaticLayout: true,
+            value,
+          },
+        );
+
+        if (position) {
+          try {
+            this.focusedEditor?.setPosition(position);
+          } catch (err) {}
+        }
+      }
+    }
+  }
+
+  onUnload() {
+    if (this.focusedEditor) {
+      this.focusedEditor.focus();
+    }
+    if (this.elementEventMonitor) {
+      this.elementEventMonitor.cleanup();
+    }
+  }
+
+  /**
    * Sets the editor or textarea value and optionally moves the caret.
    * @param value - New value to be set.
    * @param options - Options to control the text update.
    */
   setValue(value: string, options?: UpdateTextPayload) {
     this.executeSilenced(() => {
-      if (this.focusedEditor?.setValue) {
-        this.focusedEditor.setValue(value);
-      } else if (this.model) {
-        this.model.setValue(value);
-      } else {
-        this.elem.value = value;
-      }
+      const val = this.getValue();
 
+      if (val !== value) {
+        if (this.focusedEditor?.setValue) {
+          this.focusedEditor.setValue(value);
+        } else if (this.model) {
+          this.model.setValue(value);
+        } else {
+          this.elem.value = value;
+        }
+      }
       this.setPosition(options);
     });
   }
@@ -143,17 +237,22 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
   private setPosition(options?: UpdateTextPayload) {
     const lineNumber = options?.lineNumber;
     const column = options?.column;
+
     if (isNumber(lineNumber) && isNumber(column)) {
       const position = {
         lineNumber: lineNumber,
         column: column,
       };
+
       if (this.focusedEditor?.setPosition) {
         this.focusedEditor.setPosition(position);
       }
 
-      if (this.focusedEditor?.revealPositionInCenter) {
-        this.focusedEditor.revealPositionInCenter(position);
+      if (this.focusedEditor?.revealPosition) {
+        this.focusedEditor.revealPositionInCenterIfOutsideViewport(position);
+      }
+      if (!this.focusedEditor?.hasTextFocus()) {
+        this.focusedEditor?.focus();
       }
     }
   }
@@ -164,7 +263,7 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
    */
   private findAncestorWithMonacoClass() {
     return (
-      this.getParentElement() ||
+      this.getVisualElement() ||
       findAncestorWithClass(this.elem, 'editor-instance')
     );
   }
@@ -244,9 +343,11 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
    */
   bindChange(f: (...args: any[]) => void) {
     if (this.model?.onDidChangeContent) {
-      const contentChangeListener = this.model.onDidChangeContent(
-        this.wrapSilence(f),
-      );
+      const contentChangeListener = this.model.onDidChangeContent((e) => {
+        if (!e.isFlush) {
+          this.wrapSilence(f)();
+        }
+      });
       this.changeListener = contentChangeListener;
     }
   }
@@ -268,7 +369,7 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
    *
    * @returns The found Monaco editor container element, or undefined if not found.
    */
-  private getParentElement() {
+  getVisualElement() {
     return this.elem?.closest('.monaco-editor');
   }
 
@@ -281,15 +382,16 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
    * @returns An object with `lineNumber` and `column`, estimated based on the cursor's current position.
    */
   private getFallbackPosition() {
-    const lineNumber = this.estimateCurrentLineNumberByCursor();
-
-    if (lineNumber) {
-      const column = this.estimateCurrentColumnByCursor(lineNumber);
-      return {
-        lineNumber,
-        column,
-      };
-    }
+    try {
+      const lineNumber = this.estimateCurrentLineNumberByCursor();
+      if (lineNumber) {
+        const column = this.estimateCurrentColumnByCursor(lineNumber);
+        return {
+          lineNumber,
+          column,
+        };
+      }
+    } catch (error) {}
   }
   /**
    * Estimates the line number in the editor where the cursor is currently positioned.
@@ -299,7 +401,7 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
    * @returns The estimated line number where the cursor is positioned, or null if it cannot be determined.
    */
   private estimateCurrentLineNumberByCursor() {
-    const parentEl = this.getParentElement();
+    const parentEl = this.getVisualElement();
     const cursorEl = parentEl?.querySelector('.cursor');
     if (!cursorEl || !parentEl) {
       return;
@@ -317,6 +419,7 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
     const lineElementsSorted = lineElements.sort(
       (a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top,
     );
+
     // Iterate over sorted line elements to find the one nearest to the cursor
     let nearestDistance = Infinity;
     let nearestIdx: number | null = null;
@@ -345,7 +448,7 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
    * @returns The estimated column number where the cursor is located.
    */
   private estimateCurrentColumnByCursor(lineNumber: number) {
-    const parentEl = this.getParentElement();
+    const parentEl = this.getVisualElement();
     const cursorEl = parentEl?.querySelector('.cursor');
     if (!cursorEl || !parentEl) {
       return 1;
@@ -361,13 +464,16 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
     const cursorPositionWithinLine = cursorRect.left - lineRect.left;
 
     // Use tabSize from the model's options
+
     const options = this.model?.getOptions();
+
     const tabSize = options?.tabSize || 4;
 
     // Account for tabs in the content up to the cursor position
     const contentUpToCursor = (
       this.model?.getLineContent(lineNumber) || ''
     ).substring(0, lineNumber);
+
     const numberOfTabsUpToCursor = (contentUpToCursor.match(/\t/g) || [])
       .length;
     const tabAdjustedPosition =
