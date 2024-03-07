@@ -11,7 +11,7 @@ const KEEP_ALIVE_INTERVAL = 10 * 1000;
  */
 class WSBridge {
   private webSocket: WebSocket | null = null;
-  private keepAliveIntervalId: number | null = null;
+  private keepAliveIntervalId: NodeJS.Timeout | null = null;
 
   /**
    * Opens a WebSocket connection and sets up message handlers.
@@ -21,6 +21,7 @@ class WSBridge {
     const queue: string[] = [];
     const ws: WebSocket = this.makeWS(port, queue);
     port.onMessage.addListener((msg: any) => this.sendMessage(ws, queue, msg));
+
     port.onDisconnect.addListener(() => {
       ws.close(1000);
     });

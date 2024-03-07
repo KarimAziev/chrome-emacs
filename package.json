@@ -13,6 +13,7 @@
     "@types/chrome": "^0.0.258",
     "@types/codemirror": "^5.60.15",
     "@types/events": "^3.0.3",
+    "@types/node": "^20.11.24",
     "@types/uuid": "^9.0.7",
     "@types/webpack": "^5.28.5",
     "babel-loader": "^8.2.2",
