@@ -16,7 +16,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "experimentalDecorators": true,
-    "types": ["chrome", "ace", "monaco-editor"],
+    "types": ["chrome", "ace", "monaco-editor", "node"],
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
