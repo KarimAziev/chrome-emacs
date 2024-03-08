@@ -19,6 +19,36 @@ export class ElementEventMonitor {
   private element: Element;
   private listeners: EventListenerRecord[] = [];
 
+  private formatElement() {
+    const selectorsPrefixes: { [key: string]: (v: string) => string } = {
+      id: (value: string) => `#${value}`,
+      class: (value: string) => `.${value.split(' ').join('.')}`,
+      href: (val: string) => `[href="${val}"]`,
+      name: (val: string) => `[name="${val}"]`,
+    };
+
+    const tagName = this.element.tagName;
+    if (tagName) {
+      const selector = Object.keys(selectorsPrefixes).reduce((acc, key) => {
+        const value = this.element?.getAttribute(key);
+        const func = selectorsPrefixes[key];
+        if (value) {
+          const normalizedValue = func(value);
+          acc += normalizedValue;
+        }
+        return acc;
+      }, tagName.toLowerCase());
+
+      return selector;
+    }
+  }
+
+  private execIfDebug(fn: (...args: any[]) => any) {
+    if (process.env.DEBUG) {
+      fn();
+    }
+  }
+
   /**
    * Constructs an instance of ElementEventMonitor.
    * @param element The DOM Element to monitor. Event listeners added to this element will be tracked.
@@ -42,12 +72,14 @@ export class ElementEventMonitor {
       listener: EventListenerOrEventListenerObject,
       options?: boolean | AddEventListenerOptions,
     ): void => {
-      log(
-        `Added listener for ${type} on element ${this.element} ${listener}`,
-        listener,
-        options,
+      this.execIfDebug(() =>
+        log(
+          `Added '${type}' listener from element '${this.formatElement()}'`,
+          listener,
+          'options',
+          options,
+        ),
       );
-
       this.listeners.push({ type, listener, options });
       // Call the original `addEventListener` method.
       this.originalAddEventListener(type, listener, options);
@@ -58,10 +90,15 @@ export class ElementEventMonitor {
       listener: EventListenerOrEventListenerObject,
       options?: boolean | EventListenerOptions,
     ): void => {
-      log(
-        `Removed listener for ${type} from element ${this.element}`,
-        listener,
+      this.execIfDebug(() =>
+        log(
+          `Removed '${type}' listener from element '${this.formatElement()}'`,
+          listener,
+          'options',
+          options,
+        ),
       );
+
       // Find and remove the listener from the array.
       this.listeners = this.listeners.filter(
         (l) => l.type !== type || l.listener !== listener,
@@ -79,7 +116,15 @@ export class ElementEventMonitor {
     // Remove all listeners that were added.
     this.listeners.forEach(({ type, listener, options }) => {
       this.originalRemoveEventListener(type, listener, options);
-      log(`Cleanup - removed listener for ${type} from specific element`);
+      this.execIfDebug(() => {
+        log(
+          `Cleanup: '${type}' listener from element '${this.formatElement()}'`,
+          'listener:',
+          listener,
+          'options:',
+          options,
+        );
+      });
     });
     this.listeners = [];
     // Restore the original methods on the element.
