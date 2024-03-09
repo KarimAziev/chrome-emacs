@@ -75,12 +75,15 @@ class InjectedCodeMirror5Handler extends BaseInjectedHandler<HTMLDivElement> {
 
   getExtension(): string | null {
     const editorMode = this.editor?.getMode();
+
     const currentModeName = editorMode?.name;
 
     if (DummyCodeMirror.modeInfo) {
       for (const mode of DummyCodeMirror.modeInfo) {
         if (mode.mode === currentModeName && mode.ext) {
-          return mode.ext[0];
+          const extension = mode.ext[0];
+
+          return extension;
         }
       }
     }

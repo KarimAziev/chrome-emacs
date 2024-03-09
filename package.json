@@ -9,6 +9,7 @@
   "devDependencies": {
     "@babel/core": "^7.15.5",
     "@babel/preset-env": "^7.15.6",
+    "@codemirror/view": "^6.25.1",
     "@types/ace": "^0.0.52",
     "@types/chrome": "^0.0.258",
     "@types/codemirror": "^5.60.15",
