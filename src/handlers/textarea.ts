@@ -1,9 +1,7 @@
 import BaseHandler from '@/handlers/base';
 import { UpdateTextPayload, Options } from '@/handlers/types';
+import { estimateParent, setSelectionRange } from '@/util/dom';
 
-/**
- * Handler specifically designed for managing textareas.
- */
 class TextareaHandler extends BaseHandler {
   elem: HTMLTextAreaElement;
   /**
@@ -19,37 +17,20 @@ class TextareaHandler extends BaseHandler {
     });
 
     super.setValue(value, options);
-
     this.elem.dispatchEvent(event);
-    if (options?.lineNumber && options?.column) {
-      this.setPosition(options.lineNumber, options.column);
-    }
+
+    this.setSelection(options?.selections);
   }
 
-  private setPosition(line: number, column: number) {
-    const lines = this.elem.value.split('\n');
-
-    if (line > lines.length) {
-      console.warn(
-        'Chrome emacs: Line number exceeds the total number of lines.',
-      );
+  private setSelection(selections: UpdateTextPayload['selections']) {
+    if (!Array.isArray(selections) || !selections[0]) {
       return;
     }
-
-    let charIndex = 0;
-    for (let i = 0; i < line - 1; i++) {
-      charIndex += lines[i].length + 1;
+    const { start, end } = selections[0];
+    setSelectionRange(this.elem, start, end);
+    if (start === end) {
+      this.elem.selectionEnd = this.elem.selectionEnd + 1;
     }
-    charIndex += column - 1;
-
-    if (column > lines[line - 1].length + 1) {
-      console.warn('Chrome emacs: Column number exceeds the line length.');
-      return;
-    }
-
-    this.elem.selectionStart = charIndex;
-    this.elem.selectionEnd = charIndex;
-    this.elem.focus();
   }
 
   getPosition() {
@@ -72,7 +53,7 @@ class TextareaHandler extends BaseHandler {
   }
 
   getVisualElement(): Element | HTMLElement | null {
-    return this.elem.parentElement;
+    return estimateParent(this.elem);
   }
 
   load(): Promise<Options> {

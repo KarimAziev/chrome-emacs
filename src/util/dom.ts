@@ -258,3 +258,34 @@ export const normalizeRect = (rect?: DOMRect) => {
     return acc;
   }, {} as Record<keyof DOMRect, number>);
 };
+
+export function setSelectionRange(
+  textarea: HTMLTextAreaElement,
+  selectionStart: number,
+  selectionEnd: number,
+) {
+  const fullText = textarea.value;
+  textarea.value = fullText.substring(0, selectionEnd);
+
+  const scrollHeight = textarea.scrollHeight;
+  textarea.value = fullText;
+  let scrollTop = scrollHeight;
+  const textareaHeight = textarea.clientHeight;
+  if (scrollTop > textareaHeight) {
+    scrollTop -= textareaHeight / 2;
+  } else {
+    scrollTop = 0;
+  }
+  textarea.scrollTop = scrollTop;
+
+  textarea.setSelectionRange(selectionStart, selectionEnd);
+}
+
+export const estimateParent = (elem: Element) => {
+  const editableElemsSelector = getCssSelectorsOfEditable();
+  const parent = elem.parentElement;
+  if (parent?.querySelectorAll(editableElemsSelector).length === 1) {
+    return parent;
+  }
+  return elem;
+};

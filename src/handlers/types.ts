@@ -1,6 +1,11 @@
+export interface Selection {
+  start: number;
+  end: number;
+}
 export interface IPosition {
   lineNumber?: number;
   column?: number;
+  selections?: Selection[];
 }
 
 /**
