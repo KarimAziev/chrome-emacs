@@ -9,14 +9,13 @@ const common = {
           return;
         }
 
-        // Create the KeyboardEvent using the constructor
-        const evt: KeyboardEvent = new KeyboardEvent('keypress', {
-          bubbles: true,
-          cancelable: true,
-        });
+        if (this.elem?.dispatchEvent) {
+          const eventOptions = {
+            bubbles: true,
+            cancelable: true,
+          };
 
-        if (this.elem) {
-          this.elem.dispatchEvent(evt);
+          this.elem.dispatchEvent(new KeyboardEvent('keypress', eventOptions));
         }
       });
     }
