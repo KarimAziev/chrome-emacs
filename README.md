@@ -8,15 +8,14 @@ This is a [Chrome Extension](https://chromewebstore.google.com/detail/chrome-ema
 
 After the original Atomic Chrome extension was removed from the Chrome Web Store due to policy violations, I undertook the task of creating an entirely refreshed and compliant version. Now named "Chrome Emacs," it represents more than just a fork; it is a comprehensive rewrite that adheres to the newest standards and Chrome Extension Manifest V3, ensuring both compliance and enhanced security.
 
-Here are some of the major improvements and changes:
+Differences between the original and the forked package, as well as other similar packages, like [GhostText](https://github.com/fregante/GhostText/tree/main):
 
-- **Support for the Monaco Editor**: Expanding the range of compatible online editors far beyond the original.
-- **Editable Areas Navigation with Hints**: Introduces an navigation feature where editable areas are overlaid with hints (letters). Pressing the corresponding letter key on the keyboard allows users to swiftly switch focus to those areas, enhancing usability and editing efficiency.
-- **Migration to Chrome Extension Manifest V3**: Guarantees the extension stays compatible with the latest browser versions and meets the current security standards.
+- **Support for the Monaco Editor**: Expands the range of compatible online editors far beyond the original. Note, GhostText also supports the Monaco Editor but without position and scroll synchronization.
+- **Editable Areas Navigation with Hints**: Introduces a navigation feature where editable areas are overlaid with hints (letters). Pressing the corresponding letter key on the keyboard allows users to swiftly switch focus to those areas, enhancing usability and editing efficiency.
+- **Migration to Chrome Extension Manifest V3**: Guarantees that the extension stays compatible with the latest browser versions and meets current security standards.
+- **Cursor and Scroll Synchronization**: The motivation for this comes from the live-coding experience during online interviews. Unlike other solutions, it focuses not only on editing text areas but also on providing a seamless live-code experience in online editors.
 - **Auto-Major Mode Detection**: Automatically configures the most suitable editing mode for any given online editor.
 - **Complete Rewrite in TypeScript**: This enhances the extension's stability, maintainability, and performance.
-
-Through these efforts, "Chrome Emacs" not only preserves the core functionalities originally beloved by users but also introduces new features and optimizations—effectively making it a brand-new extension.
 
 Chrome Emacs is compatible with several widely-used online editors, including:
 
@@ -40,7 +39,17 @@ Install the [Chrome extension](https://chromewebstore.google.com/detail/chrome-e
 
 #### Emacs Integration
 
-<details><summary> Install the corresponding Emacs package from <a target="_blank" href="https://github.com/KarimAziev/atomic-chrome">this fork</a> (recommended), or original <a href="https://github.com/alpha22jp/atomic-chrome" target="_blank">atomic-chrome</a> package.
+Install the corresponding Emacs package from <a target="_blank" href="https://github.com/KarimAziev/atomic-chrome">this fork</a> (recommended), or original <a href="https://github.com/alpha22jp/atomic-chrome" target="_blank">atomic-chrome</a> package.
+
+Differences between them are that:
+
+- The fork handles large payloads, whereas the original package does not handle incomplete frames.
+- Cursor and scroll synchronization.
+- This fork uses temporary files, while the original package doesn't write to them. The motivation behind this is that many language servers require interaction with files for features like code linting and autocompletion.
+- Many online editors may contain areas with different programming languages even on a single page. The original package sets the major mode based on user configuration, which allows only one mode per website, while this fork allows setting major modes based on file extensions, extracted directly from the editor instance.
+- The original package allows customization of only two parameters for frame configuration: width and height. In contrast, this fork allows customization of every parameter for frame configuration. Furthermore, when the Atomic Chrome client includes a `rect` with pixel dimensions and positions, the `left` and `top` positions of the frame may be automatically calculated.
+
+<details><summary> Show installation instructions
   </summary>
 
 ##### With use-package and straight.el
