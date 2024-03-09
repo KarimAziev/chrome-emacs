@@ -33,9 +33,13 @@ class InjectedCodeMirror6Handler extends BaseInjectedHandler<HTMLDivElement> {
     }
   }
 
-  bindChange(_f: () => void): void {}
+  bindChange(f: () => void): void {
+    this.editor.dom.addEventListener('input', f);
+  }
 
-  unbindChange(_f: () => void): void {}
+  unbindChange(f: () => void): void {
+    this.editor.dom.removeEventListener('input', f);
+  }
 }
 
 export default InjectedCodeMirror6Handler;
