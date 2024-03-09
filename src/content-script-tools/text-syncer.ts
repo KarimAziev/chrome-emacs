@@ -8,6 +8,7 @@ import {
 } from '@/handlers/types';
 import { messager } from '@/content-script-tools/message';
 import { WS_URL } from '@/background-tools/ws-bridge';
+import { normalizeRect } from '@/util/dom';
 
 const errorMessageByCode: {
   [key: ClosedMessagePayload['code']]: Parameters<typeof messager.error>[0];
@@ -117,6 +118,7 @@ class TextSyncer {
         url: url,
         title: title,
         text: data.text,
+        rect: normalizeRect(options?.rect),
       };
 
       const extension = options?.extension;
@@ -129,6 +131,7 @@ class TextSyncer {
           ? extension.map(normalizeExtension)
           : normalizeExtension(extension);
       }
+
       this.post(port, 'register', payload);
     });
   }

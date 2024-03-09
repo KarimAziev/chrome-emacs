@@ -238,3 +238,23 @@ export const addStyle = <Elem extends HTMLElement>(
   });
   return elem;
 };
+
+export const normalizeRect = (rect?: DOMRect) => {
+  if (!rect) {
+    return;
+  }
+  const keys = [
+    'x',
+    'y',
+    'width',
+    'height',
+    'top',
+    'right',
+    'bottom',
+    'left',
+  ] as const;
+  return keys.reduce((acc, key) => {
+    acc[key] = Math.trunc(rect[key]);
+    return acc;
+  }, {} as Record<keyof DOMRect, number>);
+};

@@ -90,9 +90,12 @@ export type PostToInjectorPayloadMap = {
 
 export type BaseInjectedPostType = keyof PostToInjectorPayloadMap;
 
-export interface RegisterPayload extends UpdateTextPayload, Options {
+export interface RegisterPayload
+  extends UpdateTextPayload,
+    Omit<Options, 'rect'> {
   url: string;
   title: string;
+  rect?: Record<keyof DOMRect, number>;
 }
 
 export type SocketPostPayloadMap = {

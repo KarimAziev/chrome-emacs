@@ -125,6 +125,7 @@ export default class BaseInjectedHandler<Elem extends Element> {
       payload.rect.y = (rect?.y || 0) + screenY;
       payload.rect.x = (rect?.x || 0) + window.screenX;
     }
+
     this.postToInjector('ready', payload);
   }
 
@@ -177,7 +178,7 @@ export default class BaseInjectedHandler<Elem extends Element> {
     window.postMessage(message, location.origin);
   }
 
-  getVisualElement(): Element | HTMLElement | null {
+  getVisualElement(): Element | Elem | HTMLElement | null | undefined {
     return this.elem.parentElement;
   }
 }
