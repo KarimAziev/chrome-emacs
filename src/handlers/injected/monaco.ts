@@ -1,4 +1,4 @@
-import { editor, IDisposable } from 'monaco-editor';
+import type { editor, IDisposable } from 'monaco-editor';
 import BaseInjectedHandler from '@/handlers/injected/base';
 import { findAncestorWithClass } from '@/util/dom';
 import { fileExtensionsByLanguage } from '@/handlers/config/monaco';
@@ -6,6 +6,7 @@ import { isFunction, isString, isNumber } from '@/util/guard';
 import { UpdateTextPayload } from '@/handlers/types';
 import { replaceNonBreakingSpaces } from '@/util/string';
 import { ElementEventMonitor } from '@/util/event-monitor';
+import { log } from '@/util/log';
 
 declare global {
   /**
@@ -205,7 +206,11 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
 
   onUnload() {
     if (this.focusedEditor) {
-      this.focusedEditor.focus();
+      try {
+        this.focusedEditor.focus();
+      } catch (error) {
+        log('onUnload error', error);
+      }
     }
     if (this.elementEventMonitor) {
       this.elementEventMonitor.cleanup();
