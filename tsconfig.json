@@ -16,10 +16,19 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "experimentalDecorators": true,
-    "types": ["chrome", "ace", "monaco-editor", "node"],
+    "types": [
+      "chrome",
+      "ace",
+      "monaco-editor",
+      "codemirror",
+      "node",
+      "events",
+      "uuid"
+    ],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "dummy-codemirror": ["src/shims/codemirror.js"]
     }
   },
   "include": ["src"]

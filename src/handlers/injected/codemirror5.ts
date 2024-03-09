@@ -1,7 +1,7 @@
 import BaseInjectedHandler from '@/handlers/injected/base';
 import 'codemirror/mode/meta';
-import CodeMirror, { Editor } from 'codemirror';
-import { fileExtensionsByLanguage } from '@/handlers/config/codemirror';
+import DummyCodeMirror from 'dummy-codemirror';
+import type { Editor } from 'codemirror';
 import { UpdateTextPayload } from '@/handlers/types';
 import { isNumber } from '@/util/guard';
 
@@ -11,7 +11,7 @@ declare global {
   }
 }
 
-class InjectedCodeMirrorHandler extends BaseInjectedHandler<HTMLDivElement> {
+class InjectedCodeMirror5Handler extends BaseInjectedHandler<HTMLDivElement> {
   editor!: Editor;
 
   async load(): Promise<void> {
@@ -66,18 +66,26 @@ class InjectedCodeMirrorHandler extends BaseInjectedHandler<HTMLDivElement> {
     }
   }
 
-  getExtension(): string | null {
-    const currentModeName = this.editor.getMode().name;
-    if (currentModeName && fileExtensionsByLanguage[currentModeName]) {
-      return fileExtensionsByLanguage[currentModeName];
+  getVisualElement() {
+    const cm = this.elem.closest('.CodeMirror, .CodeMirror-linewidget');
+    if (cm && cm.matches('.CodeMirror')) {
+      return cm.querySelector('.CodeMirror-sizer') || null;
     }
-    for (const mode of CodeMirror.modeInfo) {
-      if (mode.mode === currentModeName && mode.ext) {
-        return mode.ext[0];
+  }
+
+  getExtension(): string | null {
+    const editorMode = this.editor?.getMode();
+    const currentModeName = editorMode?.name;
+
+    if (DummyCodeMirror.modeInfo) {
+      for (const mode of DummyCodeMirror.modeInfo) {
+        if (mode.mode === currentModeName && mode.ext) {
+          return mode.ext[0];
+        }
       }
     }
     return null;
   }
 }
 
-export default InjectedCodeMirrorHandler;
+export default InjectedCodeMirror5Handler;

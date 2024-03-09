@@ -2,16 +2,16 @@ import InjectorHandler from '@/handlers/injector';
 import type { IContentEventsBinder } from '@/handlers/injector';
 
 /**
- * Handler class for interfacing with CodeMirror editors through InjectorHandler.
+ * Handler class for interfacing with CodeMirror version 5 editors through InjectorHandler.
  */
-class CodeMirrorHandler extends InjectorHandler {
+class CodeMirror5Handler extends InjectorHandler {
   /**
-   * Constructs an instance of CodeMirrorHandler.
+   * Constructs an instance of CodeMirror5Handler.
    * @param elem - The HTMLElement associated with the CodeMirror editor.
    * @param contentEvents - The IContentEventsBinder instance for binding content-related events.
    */
   constructor(elem: HTMLElement, contentEvents: IContentEventsBinder) {
-    super(elem, contentEvents, 'codemirror');
+    super(elem, contentEvents, 'codemirror5');
   }
   /**
    * Sets the value of the CodeMirror editor, optionally triggering a DOM event.
@@ -24,8 +24,8 @@ class CodeMirrorHandler extends InjectorHandler {
   }
 
   /**
-   * Determines if the given HTMLElement can be handled by CodeMirrorHandler.
-   * @param elem - The HTMLElement to check for compatibility with CodeMirrorHandler.
+   * Determines if the given HTMLElement can be handled by CodeMirror5Handler.
+   * @param elem - The HTMLElement to check for compatibility with CodeMirror5Handler.
    * @returns True if the element can be handled by this handler, false otherwise.
    */
 
@@ -41,4 +41,4 @@ class CodeMirrorHandler extends InjectorHandler {
   }
 }
 
-export default CodeMirrorHandler;
+export default CodeMirror5Handler;
