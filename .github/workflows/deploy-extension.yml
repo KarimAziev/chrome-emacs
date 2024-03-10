@@ -1,10 +1,13 @@
 name: Build, Release, and Publish Chrome Extension
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
+      tags:
+        description: 'Test scenario tags'
       versionType:
         description: 'Version Increment Type (major, minor, patch) - Leave empty for auto detection based on commit message'
         required: false
@@ -13,6 +16,9 @@ on:
         description: 'New Version (e.g., 1.2.3) - Overrides versionType if set'
         required: false
         default: ''
+  push:
+    branches:
+      - main
 env:
   DIRECTORY: app
   PROJECT_NAME: chrome-emacs
