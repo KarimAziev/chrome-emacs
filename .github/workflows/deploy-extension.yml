@@ -113,25 +113,17 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-zip
-      - name: Create Release
+      - name: Create or Update Release
         id: create-release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: ${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION }}
-          release_name: Release ${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION }}
+          allowUpdates: true
+          tag: ${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION }}
+          name: Release ${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION }}
           draft: false
           prerelease: false
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: ./${{ env.ZIP_NAME }}
-          asset_name: ${{ env.ZIP_NAME }}
-          asset_content_type: application/zip
+          artifacts: ${{ github.workspace }}/${{ env.ZIP_NAME }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           
   SubmitToChromeWebStore:
     runs-on: ubuntu-latest
