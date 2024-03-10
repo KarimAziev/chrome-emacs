@@ -79,11 +79,17 @@ jobs:
           echo "NEW_VERSION=$NEW_VERSION" >> $VERSION_FILE
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
           
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add $DIRECTORY/manifest.json
-          git commit -m "Increment version to $NEW_VERSION"
-          git push
+          # Check if there are any changes
+          if git diff --quiet --exit-code $DIRECTORY/manifest.json; then
+            echo "No changes in manifest.json. Skipping commit and push."
+          else
+            # If there are changes, configure git, commit, and push
+            git config user.name "github-actions"
+            git config user.email "github-actions@github.com"
+            git add $DIRECTORY/manifest.json
+            git commit -m "Increment version to $NEW_VERSION"
+            git push
+          fi
       - name: Build the project
         run: npm run build
       - name: Zip the app directory for release
