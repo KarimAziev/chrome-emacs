@@ -139,7 +139,7 @@ jobs:
     if: ${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION != needs.PrepareBuildAndZip.outputs.OLD_VERSION || github.event_name == 'workflow_dispatch' }}
     steps:
       - name: Download zipped app artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: release-zip
       - name: Refresh Google API Token
