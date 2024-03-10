@@ -260,6 +260,26 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
         this.focusedEditor?.focus();
       }
     }
+    if (options?.selections) {
+      this.setSelection(options.selections);
+    }
+  }
+
+  private setSelection(selections: UpdateTextPayload['selections']) {
+    selections?.forEach(({ start, end }) => {
+      const posA = this.model?.getPositionAt(start);
+      const posB = this.model?.getPositionAt(end);
+      if (posA && posB) {
+        this.focusedEditor?.setSelection(
+          new window.monaco.Selection(
+            posA.lineNumber,
+            posA.column,
+            posB.lineNumber,
+            posB.column,
+          ),
+        );
+      }
+    });
   }
 
   /**
