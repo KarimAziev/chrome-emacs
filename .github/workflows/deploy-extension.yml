@@ -91,21 +91,8 @@ jobs:
         with:
           name: release-zip
           path: ${{ env.ZIP_NAME }}
-  SubmitToChromeWebStore:
-    runs-on: ubuntu-latest
-    needs: PrepareBuildAndZip
-    if: ${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION != needs.PrepareBuildAndZip.outputs.OLD_VERSION || github.event_name == 'workflow_dispatch' }}
-    steps:
-      - name: Download zipped app artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: release-zip
-        
-      - name: Submit to Google Chrome Web Store
-        run: npx chrome-webstore-upload-cli@2 upload --source ${{ env.ZIP_NAME }} --extension-id ${{ secrets.EXTENSION_ID }} --client-id ${{ secrets.CLIENT_ID }} --client-secret ${{ secrets.CLIENT_SECRET }} --refresh-token ${{ secrets.REFRESH_TOKEN }} --auto-publish
-        
   CreateAndUploadRelease:
-    needs: [PrepareBuildAndZip, SubmitToChromeWebStore]
+    needs: [PrepareBuildAndZip]
     runs-on: ubuntu-latest
     if: ${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION != needs.PrepareBuildAndZip.outputs.OLD_VERSION || github.event_name == 'workflow_dispatch' }}
     steps:
@@ -132,3 +119,33 @@ jobs:
           asset_path: ./${{ env.ZIP_NAME }}
           asset_name: ${{ env.ZIP_NAME }}
           asset_content_type: application/zip
+          
+  SubmitToChromeWebStore:
+    runs-on: ubuntu-latest
+    needs: [PrepareBuildAndZip, CreateAndUploadRelease]
+    if: ${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION != needs.PrepareBuildAndZip.outputs.OLD_VERSION || github.event_name == 'workflow_dispatch' }}
+    steps:
+      - name: Download zipped app artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: release-zip
+      - name: Refresh Google API Token
+        run: |
+          RESPONSE=$(curl -s -X POST https://oauth2.googleapis.com/token \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d client_id=${{ secrets.CLIENT_ID }} \
+            -d client_secret=${{ secrets.CLIENT_SECRET }} \
+            -d refresh_token=${{ secrets.REFRESH_TOKEN }} \
+            -d grant_type=refresh_token)
+          echo "Response: $RESPONSE"
+          ACCESS_TOKEN=$(echo $RESPONSE | jq -r .access_token)
+          
+          if [ "$ACCESS_TOKEN" == "null" ]; then
+            echo "Failed to refresh token"
+            exit 1
+          fi
+
+          echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
+
+      - name: Submit to Google Chrome Web Store
+        run: npx chrome-webstore-upload-cli@2 upload --source ${{ env.ZIP_NAME }} --extension-id ${{ secrets.EXTENSION_ID }} --client-id ${{ secrets.CLIENT_ID }} --client-secret ${{ secrets.CLIENT_SECRET }} --access-token $ACCESS_TOKEN --auto-publish
