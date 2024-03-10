@@ -17,6 +17,8 @@ Differences between the original and the forked package, as well as other simila
 - **Auto-Major Mode Detection**: Automatically configures the most suitable editing mode for any given online editor.
 - **Complete Rewrite in TypeScript**: This enhances the extension's stability, maintainability, and performance.
 
+![Demo](./chrome-emacs.gif)
+
 Chrome Emacs is compatible with several widely-used online editors, including:
 
 - ☒ [codepen.io](https://codepen.io/)
@@ -28,8 +30,6 @@ Chrome Emacs is compatible with several widely-used online editors, including:
 - ☒ [glitch.com](https://glitch.com/)
 - ☒ [plnkr.co](https://plnkr.co/)
 - ☐ [codesandbox.io](https://codesandbox.io/) (Currently unsupported due to a lack of Monaco API exposure).
-
-![Demo](./chrome-emacs.gif)
 
 ### Installation
 
