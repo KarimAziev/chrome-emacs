@@ -2,6 +2,7 @@ import BaseInjectedHandler from '@/handlers/injected/base';
 import 'codemirror/mode/meta';
 import DummyCodeMirror from 'dummy-codemirror';
 import type { Editor } from 'codemirror';
+import { fileExtensionsByLanguage } from '@/handlers/config/codemirror';
 import { UpdateTextPayload } from '@/handlers/types';
 import { isNumber } from '@/util/guard';
 
@@ -78,7 +79,12 @@ class InjectedCodeMirror5Handler extends BaseInjectedHandler<HTMLDivElement> {
 
     const currentModeName = editorMode?.name;
 
-    if (DummyCodeMirror.modeInfo) {
+    // we use some hardcoded overrides because the `modeInfo` may contain duplicates, e.g., css => gcss
+    if (currentModeName && fileExtensionsByLanguage[currentModeName]) {
+      return fileExtensionsByLanguage[currentModeName];
+    }
+
+    if (currentModeName && DummyCodeMirror.modeInfo) {
       for (const mode of DummyCodeMirror.modeInfo) {
         if (mode.mode === currentModeName && mode.ext) {
           const extension = mode.ext[0];
