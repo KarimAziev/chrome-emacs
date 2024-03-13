@@ -126,80 +126,76 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
       }
     });
   }
-
   /**
-   * The `hackMonaco` method is designed to address a specific challenge encountered when integrating
-   * with the Monaco editor within a dynamic web application environment, such as a Chrome extension.
-   * It provides a workaround for preserving the original functionality and event handlers of the Monaco
-   * editor instances on a webpage, while also allowing for the injection of custom functionality or
-   * enhancements by the extension.
+   * `hackMonaco` serves as a workaround to recreate a Monaco editor instance
+   * while preserving its associated model. This approach is necessary when
+   * `window.monaco.editor.create` is accessible but the editor instance, or
+   * methods to retrieve such instances, are not exposed directly.
    *
-   * Motivation:
-   * When integrating external enhancements or tools into web applications with complex
-   * UI components like the Monaco editor, a common issue is the interference between
-   * the original functionalities of the component and the injected behavior. Specifically,
-   * the Monaco editor binds event listeners and other DOM-related states directly to its container
-   * and child elements. Simply recreating the editor to apply custom behaviors or settings can lead
-   * to the loss of these bindings, causing the original page functionality, such as hot reloading
-   * or result display mechanisms, to break or behave unpredictably.
+   * #### Functionality
+   * 1. **DOM Manipulation**: Initially, `hackMonaco`
+   * identifies and removes the `.monaco-editor` DOM element to which the Monaco
+   * model was attached. This is crucial because the Monaco editor expects the
+   * parent container to be devoid of any child nodes to correctly read its size
+   * and to ensure proper binding of the model to a clean slate DOM.
    *
-   * To address this challenge, the `hackMonaco` method takes a non-destructive approach by carefully
-   * removing only the necessary child elements of the Monaco editor container and then recreating the
-   * editor instance manually. This technique ensures that original event listeners, attached by the
-   * website to the editor's container, remain intact and functional, while still enabling the extension
-   * to introduce its desired enhancements or modifications to the editor instance.
+   * 2. **Model Preservation**: By retaining the Monaco model associated with the
+   * original editor instance, `hackMonaco` ensures that the text content,
+   * language configuration, and other stateful information of the document remain
+   * intact across editor re-creations. This model is then reused when creating a
+   * ew editor instance, effectively reestablishing the connection to the DOM
+   * without loss of information.
    *
-   * Implementation Details:
-   * - The method first locates the visual container element of the Monaco editor to be targeted.
-   * - It then proceeds to remove specific child elements of the container that are associated with
-   *   the current Monaco editor instance. This step is crucial for clearing out the existing editor's
-   *   visual state without disrupting any external bindings or event listeners attached to the container itself.
-   * - A new instance of the Monaco editor is then created and attached to the cleaned container, effectively
-   *   replacing the previous instance while preserving the container's original event listeners and DOM state.
-   * - The method also ensures that essential attributes or data properties of the container that might be
-   *   necessary for the functioning of original page scripts are maintained or appropriately handled.
+   * 3. **Event Monitor Utilization**: The method employs `ElementEventMonitor` to
+   * manage the DOM listeners that are reattached to the container by
+   * `monaco.editor.create`. Since the recreation process might inadvertently bind
+   * extension-specific listeners to the container, `ElementEventMonitor`
+   * facilitates the removal of these listeners, ensuring a clean integration
+   * without interference from unintended event handlers.
    *
-   * Usage Note:
-   * This method is specifically tailored for scenarios where maintaining the original functionality of a
-   * webpage or application is paramount, and direct manipulation of the Monaco editor instance is necessary.
-   * It is a sophisticated workaround that should be applied with understanding of the underlying DOM structure
-   * and event handling mechanisms of both the Monaco editor and the host application.
+   * 4. **Editor and Model Relationship**: It is important to note that while the
+   * model preserves the document's textual content and configurations, the cursor
+   * position and text selections cannot be maintained through the model alone and
+   * require an editor instance. The `hackMonaco` method acknowledges this
+   * distinction by focusing on model preservation while addressing cursor and
+   * selection states separately.
    *
-   * @remarks It's important to thoroughly test this method across different versions of the Monaco editor
-   * and in various application states to ensure compatibility and stability of the integrated functionality.
+   * 5. **Fallback Position**: Prior to obtaining or recreating the editor
+   * instance, `hackMonaco` employs a fallback mechanism for estimating the
+   * cursor's position. This provisional solution remains in place until direct
+   * access to the editor's instance enables precise cursor and selection
+   * manipulation based on the editor's API.
+   *
    */
-
   private hackMonaco() {
     const el = this.getVisualElement();
+    if (!el) {
+      return;
+    }
 
-    if (el) {
-      const value = this.model?.getValue();
-      const position = this.getFallbackPosition();
+    const value = this.model?.getValue();
+    const position = this.getFallbackPosition();
 
-      const parent = el?.parentElement;
+    const parent = el?.parentElement;
 
-      parent?.removeAttribute('data-keybinding-context');
+    parent?.removeAttribute('data-keybinding-context');
 
-      if (parent) {
-        this.elementEventMonitor = new ElementEventMonitor(parent);
-        this.elementEventMonitor.start();
+    if (parent) {
+      this.elementEventMonitor = new ElementEventMonitor(parent);
+      this.elementEventMonitor.start();
 
-        parent?.removeChild(el);
+      parent?.removeChild(el);
 
-        this.focusedEditor = window.monaco.editor.create(
-          parent as HTMLElement,
-          {
-            model: this.model,
-            automaticLayout: true,
-            value,
-          },
-        );
+      this.focusedEditor = window.monaco.editor.create(parent as HTMLElement, {
+        model: this.model,
+        automaticLayout: true,
+        value,
+      });
 
-        if (position) {
-          try {
-            this.focusedEditor?.setPosition(position);
-          } catch (err) {}
-        }
+      if (position) {
+        try {
+          this.focusedEditor?.setPosition(position);
+        } catch (err) {}
       }
     }
   }
