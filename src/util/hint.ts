@@ -83,7 +83,7 @@ class HintReader {
         this.hints.push([hint, el]);
       });
 
-      document.body.addEventListener('keydown', this.listener);
+      document.addEventListener('keydown', this.listener);
     });
   }
 
@@ -112,7 +112,7 @@ class HintReader {
   private cleanup(): void {
     this.hints.forEach(([hint, _]) => hint.remove());
     if (this.listener) {
-      document.body.removeEventListener('keydown', this.listener);
+      document.removeEventListener('keydown', this.listener);
       this.listener = null;
     }
     this.hints = [];
