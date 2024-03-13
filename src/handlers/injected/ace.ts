@@ -90,7 +90,63 @@ class InjectedAceHandler extends BaseInjectedHandler<HTMLElement> {
     this.executeSilenced(() => {
       this.editor.setValue(text, 1);
       this.setPosition(options);
+      this.setSelection(options);
     });
+  }
+
+  private setFallbackSelection(options?: UpdateTextPayload) {
+    if (!this.editor || !options?.selections) {
+      return;
+    }
+    try {
+      const { start, end } = options.selections[0];
+
+      this.editor
+        .getSession()
+        .getSelection()
+        .setSelectionRange({
+          start: this.editor.getSession().doc.indexToPosition(start, 0),
+          end: this.editor.getSession().doc.indexToPosition(end, 0),
+        });
+    } catch (_error) {}
+  }
+
+  private setSelection(options?: UpdateTextPayload) {
+    if (!this.editor || !options?.selections) {
+      return;
+    }
+
+    try {
+      const Range = ace.require('ace/range').Range;
+
+      this.editor.getSelection().clearSelection();
+
+      options.selections.forEach((selection, index) => {
+        const { start, end } = selection;
+
+        const startPosition = this.editor
+          .getSession()
+          .doc.indexToPosition(start, 0);
+        const endPosition = this.editor
+          .getSession()
+          .doc.indexToPosition(end, 0);
+
+        const range = new Range(
+          startPosition.row,
+          startPosition.column,
+          endPosition.row,
+          endPosition.column,
+        );
+
+        if (index === 0) {
+          this.editor.getSelection().setSelectionRange(range);
+        } else {
+          this.editor.getSelection().addRange(range);
+        }
+      });
+    } catch (_error) {
+      this.setFallbackSelection(options);
+    }
   }
 
   bindChange(f: (...args: any[]) => void) {
