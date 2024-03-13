@@ -239,6 +239,11 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
     });
   }
 
+  /**
+   * Sets the cursor position within the editor or textarea, based on the
+     provided options.
+   * @param options - Options with position and selection data
+   */
   private setPosition(options?: UpdateTextPayload) {
     const lineNumber = options?.lineNumber;
     const column = options?.column;
@@ -260,25 +265,51 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
         this.focusedEditor?.focus();
       }
     }
-    if (options?.selections) {
-      this.setSelection(options.selections);
+    try {
+      this.setSelection(options?.selections);
+    } catch (error) {
+      console.log('chrome-emacs: Cannot set selection', error);
     }
   }
 
   private setSelection(selections: UpdateTextPayload['selections']) {
-    selections?.forEach(({ start, end }) => {
+    if (!selections) {
+      return;
+    }
+    const mappedSelections = selections.flatMap(({ start, end }) => {
       const posA = this.model?.getPositionAt(start);
       const posB = this.model?.getPositionAt(end);
       if (posA && posB) {
-        this.focusedEditor?.setSelection(
-          new window.monaco.Selection(
-            posA.lineNumber,
-            posA.column,
-            posB.lineNumber,
-            posB.column,
-          ),
-        );
+        return [[posA.lineNumber, posA.column, posB.lineNumber, posB.column]];
+      } else {
+        return [];
       }
+    });
+
+    if (
+      mappedSelections &&
+      mappedSelections?.length > 1 &&
+      this.focusedEditor?.setSelections
+    ) {
+      return this.focusedEditor?.setSelections(
+        mappedSelections.map(
+          ([
+            selectionStartLineNumber,
+            positionColumn,
+            positionLineNumber,
+            selectionStartColumn,
+          ]) => ({
+            selectionStartColumn,
+            selectionStartLineNumber,
+            positionColumn,
+            positionLineNumber,
+          }),
+        ),
+      );
+    }
+
+    mappedSelections?.forEach(([a, b, c, d]) => {
+      this.focusedEditor?.setSelection(new window.monaco.Selection(a, b, c, d));
     });
   }
 
