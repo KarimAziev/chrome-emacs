@@ -1,10 +1,26 @@
 export interface Selection {
+  /**
+   * The zero-based index of the start of the selection.
+   */
   start: number;
+  /**
+   * The zero-based index of the end of the selection, inclusive.
+   */
   end: number;
 }
+
 export interface IPosition {
+  /**
+   * The 1-based line number where the cursor is positioned.
+   */
   lineNumber?: number;
+  /**
+   * The 1-based column number of the cursor's position in the line.
+   */
   column?: number;
+  /**
+   * An array of `Selection` objects representing the active text selections.
+   */
   selections?: Selection[];
 }
 
