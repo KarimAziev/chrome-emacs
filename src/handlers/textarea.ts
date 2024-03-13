@@ -1,5 +1,5 @@
 import BaseHandler from '@/handlers/base';
-import { UpdateTextPayload, Options } from '@/handlers/types';
+import { UpdateTextPayload, LoadedOptions } from '@/handlers/types';
 import { estimateParent, setSelectionRange } from '@/util/dom';
 
 class TextareaHandler extends BaseHandler {
@@ -56,7 +56,7 @@ class TextareaHandler extends BaseHandler {
     return estimateParent(this.elem);
   }
 
-  load(): Promise<Options> {
+  load(): Promise<LoadedOptions> {
     const parentEl = this.getVisualElement();
     const rect = parentEl?.getBoundingClientRect();
     const screenY = window.screenY;

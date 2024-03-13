@@ -1,5 +1,6 @@
 import InjectorHandler from '@/handlers/injector';
 import type { IContentEventsBinder } from '@/handlers/injector';
+import { UpdateTextPayload } from '@/handlers/types';
 
 /**
  * Handler class for interfacing with CodeMirror version 6 editors through InjectorHandler.
@@ -18,7 +19,7 @@ class CodeMirror6Handler extends InjectorHandler {
    * @param value - The value to set in the CodeMirror editor.
    * @param options - Options to customize the value setting, including whether to trigger DOM events.
    */
-  setValue(value: string, options: any) {
+  setValue(value: string, options: UpdateTextPayload) {
     options = Object.assign({}, { triggerDOMEvent: false }, options);
     super.setValue(value, options);
   }

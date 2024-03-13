@@ -3,7 +3,8 @@ import {
   IHandler,
   IContentEventsBinder,
   UpdateTextPayload,
-  Options,
+  LoadedOptions,
+  ValueSetEmitOptions,
 } from '@/handlers/types';
 
 /**
@@ -33,7 +34,7 @@ export default class BaseHandler extends EventEmitter implements IHandler {
   /**
    * Handler initialization or data loading.
    */
-  load(): Promise<Options> {
+  load(): Promise<LoadedOptions> {
     return Promise.resolve({});
   }
 
@@ -42,7 +43,7 @@ export default class BaseHandler extends EventEmitter implements IHandler {
    * @param value - The value to set.
    * @param options - Optional parameters.
    */
-  setValue(value: string, options?: UpdateTextPayload): void {
+  setValue(value: string, options?: ValueSetEmitOptions): void {
     this.emit('valueSet', value, options || {});
   }
 

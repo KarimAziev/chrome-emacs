@@ -1,5 +1,5 @@
 import {
-  Options,
+  LoadedOptions,
   UpdateTextPayload,
   PostToInjectorPayloadMap,
   BaseInjectedPostType,
@@ -139,7 +139,7 @@ export default class BaseInjectedHandler<Elem extends Element> {
   /**
    * Optionally returns data about the handler's capabilities. Designed to be overridden.
    */
-  getExtension(): Options['extension'] {
+  getExtension(): LoadedOptions['extension'] {
     return undefined;
   }
 

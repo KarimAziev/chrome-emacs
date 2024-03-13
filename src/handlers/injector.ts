@@ -3,7 +3,8 @@ import BaseHandler from '@/handlers/base';
 import {
   IContentEventsBinder,
   UpdateTextPayload,
-  Options,
+  ValueSetEmitOptions,
+  LoadedOptions,
   PostToInjectedPayloadMap,
 } from '@/handlers/types';
 import { getCssSelector } from '@/util/dom';
@@ -11,7 +12,7 @@ import { getCssSelector } from '@/util/dom';
 /**
  * A specialized handler extending BaseHandler for injecting and communicating with scripts.
  */
-export default class InjectorHandler extends BaseHandler {
+export default class nInjectorHandler extends BaseHandler {
   private name: string;
   private uuid: string;
   private _getValueCallback: ((payload: UpdateTextPayload) => void) | null;
@@ -51,7 +52,7 @@ export default class InjectorHandler extends BaseHandler {
 
   async load() {
     const elemSelector = getCssSelector(this.elem);
-    return new Promise<Options>((resolve) => {
+    return new Promise<LoadedOptions>((resolve) => {
       this.injectScript(() => {
         this.postToInjected('initialize', {
           name: this.name,
@@ -67,7 +68,7 @@ export default class InjectorHandler extends BaseHandler {
    * @param value - The value to set.
    * @param options - Optional parameters.
    */
-  setValue(value: string, options?: UpdateTextPayload): void {
+  setValue(value: string, options?: ValueSetEmitOptions): void {
     this.postToInjected('setValue', { text: value, ...options });
     super.setValue(value, options);
   }

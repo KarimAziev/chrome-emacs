@@ -29,13 +29,21 @@ export interface IPosition {
  */
 export interface UpdateTextPayload extends IPosition {
   text: string;
-  triggerDOMEvent?: boolean;
+}
+
+export interface MessageEventData {
+  type: 'updateText';
+  payload: UpdateTextPayload;
 }
 
 /**
  * Defines options for handler configuration.
  */
-export interface Options extends IPosition {
+export interface ValueSetEmitOptions extends UpdateTextPayload {
+  triggerDOMEvent?: boolean;
+}
+
+export interface LoadedOptions extends IPosition {
   extension?: string | string[] | null;
   rect?: DOMRect;
 }
@@ -47,14 +55,14 @@ export interface IHandler {
   /**
    * Loads data or performs an initialization operation.
    */
-  load(): Promise<Options>;
+  load(): Promise<LoadedOptions>;
 
   /**
    * Sets a value with optional settings.
    * @param value - The value to set.
    * @param options - Additional options.
    */
-  setValue(value: string, options?: UpdateTextPayload): void;
+  setValue(value: string, options?: ValueSetEmitOptions): void;
 
   /**
    * Retrieves the currently set value.
@@ -80,15 +88,15 @@ export interface IHandler {
 /**
  * Constructs handler objects capable of handling elements.
  */
-export interface IHandlerConstructor {
-  new (elem: Element, contentEvents: IContentEventsBinder): IHandler;
+export interface IHandlerConstructor<Elem = Element> {
+  new (elem: Elem, contentEvents: IContentEventsBinder): IHandler;
 
   /**
    * Determines if the handler can manage the provided element.
    * @param elem - The element to check.
    * @returns A boolean indicating if the handler can manage the element.
    */
-  canHandle(elem: Element): boolean;
+  canHandle(elem: Elem): boolean;
 }
 
 /**
@@ -104,7 +112,7 @@ export interface IContentEventsBinder {
 }
 
 export type PostToInjectorPayloadMap = {
-  ready: Options;
+  ready: LoadedOptions;
   value: UpdateTextPayload;
   change: {};
 };
@@ -113,7 +121,7 @@ export type BaseInjectedPostType = keyof PostToInjectorPayloadMap;
 
 export interface RegisterPayload
   extends UpdateTextPayload,
-    Omit<Options, 'rect'> {
+    Omit<LoadedOptions, 'rect'> {
   url: string;
   title: string;
   rect?: Record<keyof DOMRect, number>;

@@ -1,10 +1,10 @@
 import {
   IHandler,
-  Options,
-  UpdateTextPayload,
+  LoadedOptions,
   RegisterPayload,
   SocketPostPayloadMap,
   ClosedMessagePayload,
+  MessageEventData,
 } from '@/handlers/types';
 import { messager } from '@/content-script-tools/message';
 import { WS_URL } from '@/background-tools/ws-bridge';
@@ -29,7 +29,7 @@ class TextSyncer {
     url: string,
     title: string,
     handler: IHandler,
-    options?: Options,
+    options?: LoadedOptions,
   ) {
     const port = chrome.runtime.connect();
 
@@ -50,9 +50,9 @@ class TextSyncer {
    * @returns A function to be used as the onMessage event listener.
    */
   private makeMessageListener(handler: IHandler) {
-    return (msg: any) => {
-      if ((this as any)[msg.type]) {
-        return (this as any)[msg.type](handler, msg.payload);
+    return (msg: MessageEventData) => {
+      if (this[msg.type]) {
+        return this[msg.type](handler, msg.payload);
       }
       console.warn('Chrome Emacs received unknown message:', msg);
     };
@@ -62,7 +62,8 @@ class TextSyncer {
    * @param handler - The handler instance managing the text element.
    * @param payload - The payload containing the updated text.
    */
-  updateText(handler: IHandler, payload: UpdateTextPayload) {
+
+  updateText(handler: IHandler, payload: MessageEventData['payload']) {
     if (handler.setValue) {
       handler.setValue(payload.text, payload);
     }
@@ -107,7 +108,7 @@ class TextSyncer {
     url: string,
     title: string,
     handler: IHandler,
-    options?: Options,
+    options?: LoadedOptions,
   ) {
     options = options || {};
 
