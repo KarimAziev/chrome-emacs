@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 0.2.1 (2024-03-14)
+
+- Added selection handling in the Ace editor.
+- Fixed the Monaco editor issue with tab switching on some sites (e.g., StackBlitz).
+
 ## Version 0.2.0 (2024-03-12)
 
 ### New features:
