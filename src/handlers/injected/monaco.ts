@@ -50,6 +50,15 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
    */
   changeListener?: IDisposable;
 
+  /**
+   * Stores the original CSS `display` property of the `.monaco-editor` element to restore it upon cleanup.
+   */
+  originalDisplayStyle?: string;
+  /**
+   * Represents the newly created DOM element that the Monaco editor instance is injected into
+   */
+  injectedEditorElement?: HTMLDivElement;
+
   elementEventMonitor: ElementEventMonitor;
   /**
    * Constructs an instance of InjectedMonacoHandler.
@@ -127,44 +136,35 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
     });
   }
   /**
-   * `hackMonaco` serves as a workaround to recreate a Monaco editor instance
-   * while preserving its associated model. This approach is necessary when
-   * `window.monaco.editor.create` is accessible but the editor instance, or
-   * methods to retrieve such instances, are not exposed directly.
+   * The `hackMonaco` method provides a workaround for reinitializing the Monaco
+   * editor with its previously associated model in a manner that preserves the
+   * editor's state, including text content and configurations.
    *
-   * #### Functionality
-   * 1. **DOM Manipulation**: Initially, `hackMonaco`
-   * identifies and removes the `.monaco-editor` DOM element to which the Monaco
-   * model was attached. This is crucial because the Monaco editor expects the
-   * parent container to be devoid of any child nodes to correctly read its size
-   * and to ensure proper binding of the model to a clean slate DOM.
+   * ### Key Steps:
+   * - **Visibility Adjustment**:
+   *   This method hides the exisiting `.monaco-editor` DOM element by setting its
+   *   display style to 'none'.
    *
-   * 2. **Model Preservation**: By retaining the Monaco model associated with the
-   * original editor instance, `hackMonaco` ensures that the text content,
-   * language configuration, and other stateful information of the document remain
-   * intact across editor re-creations. This model is then reused when creating a
-   * ew editor instance, effectively reestablishing the connection to the DOM
-   * without loss of information.
+   * - **Model Retention**: It maintains the model from the original Monaco editor,
+   *   ensuring that all text and editor configurations remain intact.
    *
-   * 3. **Event Monitor Utilization**: The method employs `ElementEventMonitor` to
-   * manage the DOM listeners that are reattached to the container by
-   * `monaco.editor.create`. Since the recreation process might inadvertently bind
-   * extension-specific listeners to the container, `ElementEventMonitor`
-   * facilitates the removal of these listeners, ensuring a clean integration
-   * without interference from unintended event handlers.
+   * - **Editor Reinitialization**: A new Monaco editor instance is created and
+   *   inserted into the DOM. This instance is initialized with the preserved
+   *   model, effectively maintaining continuity in the editor's content and settings.
    *
-   * 4. **Editor and Model Relationship**: It is important to note that while the
-   * model preserves the document's textual content and configurations, the cursor
-   * position and text selections cannot be maintained through the model alone and
-   * require an editor instance. The `hackMonaco` method acknowledges this
-   * distinction by focusing on model preservation while addressing cursor and
-   * selection states separately.
+   * - **Event Management**: Leveraging `ElementEventMonitor`, any additional DOM
+   *   listeners introduced during editor reinitialization are managed to ensure
+   *   a clean integration without interference from unwanted event handlers.
    *
-   * 5. **Fallback Position**: Prior to obtaining or recreating the editor
-   * instance, `hackMonaco` employs a fallback mechanism for estimating the
-   * cursor's position. This provisional solution remains in place until direct
-   * access to the editor's instance enables precise cursor and selection
-   * manipulation based on the editor's API.
+   * - **State and Cursor Management**: While the text model retains content and
+   *   settings, this approach also attempts to minimally disrupt the user's
+   *   interaction state, including cursor position and text selections, through
+   *   careful management during the reinitialization process.
+   *
+   * - **DOM Cleanup on Unload**: Upon unloading or disposing of the editor, the
+   *   method ensures proper cleanup of the newly created editor instance and
+   *   restores the visibility of the original editor element to its previous state,
+   *   ensuring no residual impact on the DOM.
    *
    */
   private hackMonaco() {
@@ -178,19 +178,26 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
 
     const parent = el?.parentElement;
 
-    parent?.removeAttribute('data-keybinding-context');
-
     if (parent) {
+      this.originalDisplayStyle = el.style.display;
+
+      el.style.display = 'none';
+
       this.elementEventMonitor = new ElementEventMonitor(parent);
       this.elementEventMonitor.start();
-
-      parent?.removeChild(el);
 
       this.focusedEditor = window.monaco.editor.create(parent as HTMLElement, {
         model: this.model,
         automaticLayout: true,
         value,
       });
+
+      const injectedChild = Array.from(parent.childNodes).find(
+        (child) => child !== el,
+      );
+      if (injectedChild) {
+        this.injectedEditorElement = injectedChild as HTMLDivElement;
+      }
 
       if (position) {
         try {
@@ -208,6 +215,20 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
         log('onUnload error', error);
       }
     }
+
+    if (this.injectedEditorElement) {
+      const parentEl = this.getVisualElement()?.parentElement;
+
+      parentEl?.childNodes.forEach((child) => {
+        if (this.injectedEditorElement === child) {
+          child.remove();
+        } else if ((child as HTMLElement).style.display === 'none') {
+          (child as HTMLElement).style.display =
+            this.originalDisplayStyle || '';
+        }
+      });
+    }
+
     if (this.elementEventMonitor) {
       this.elementEventMonitor.cleanup();
     }
@@ -422,7 +443,7 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
    * @returns The found Monaco editor container element, or undefined if not found.
    */
   getVisualElement() {
-    return this.elem?.closest('.monaco-editor');
+    return this.elem?.closest<HTMLDivElement>('.monaco-editor');
   }
 
   /**
