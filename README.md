@@ -43,11 +43,11 @@ Install the corresponding Emacs package from <a target="_blank" href="https://gi
 
 Differences between them are that:
 
-- The fork handles large payloads, whereas the original package does not handle incomplete frames.
-- Cursor and scroll synchronization.
-- This fork uses temporary files, while the original package doesn't write to them. The motivation behind this is that many language servers require interaction with files for features like code linting and autocompletion.
-- Many online editors may contain areas with different programming languages even on a single page. The original package sets the major mode based on user configuration, which allows only one mode per website, while this fork allows setting major modes based on file extensions, extracted directly from the editor instance.
-- The original package allows customization of only two parameters for frame configuration: width and height. In contrast, this fork allows customization of every parameter for frame configuration. Furthermore, when the Atomic Chrome client includes a `rect` with pixel dimensions and positions, the `left` and `top` positions of the frame may be automatically calculated.
+- **Handling large payloads:** Unlike the original package, which may not handle incomplete frames, this fork is equipped to manage large payloads efficiently.
+- **Cursor and scroll synchronization:** Inspired by the need for a more fluid live-coding experience during online interviews, the [chrome-emacs](https://github.com/KarimAziev/chrome-emacs) extension and this fork focus on editing text areas and providing seamless cursor and scroll synchronization in online editors.
+- **Flexible file handling:** This fork introduces the `atomic-chrome-create-file-strategy` variable, enabling refined control over the use of temporary files for editing—a feature not present in the original package. Recognizing that language servers often require file access for functionalities like code linting and autocompletion, this feature allows users to enable, disable, or customize file usage according to their needs. This flexibility ensures users have full control over their editing environment.
+- **Dynamic major modes:** Recognizing the diversity of programming languages within many online editors, this fork surpasses the original package's limitation of one major mode per website. It dynamically sets major modes based on file extensions extracted from the editor instance, resulting in a more responsive and tailored editing experience.
+- **Enhanced frame configuration:** Beyond the original package's limited customization of frame width and height, this fork extends customization to every frame configuration parameter. It also automatically calculates `left` and `top` positions for the frame when the Atomic Chrome client provides a `rect` with pixel dimensions and positions, offering a more adaptable and sophisticated user interface.
 
 <details><summary> Show installation instructions
   </summary>
@@ -97,6 +97,8 @@ Add the downloaded directory to the load path and require it:
 </details>
 
 ### Usage
+
+https://github.com/KarimAziev/atomic-chrome/assets/24935940/e1f6875c-d917-4a8b-ad58-35d55eeb5cbb
 
 Ensure that Emacs is running with the [atomic-chrome fork](https://github.com/KarimAziev/atomic-chrome) (or [original atomic-chrome](https://github.com/alpha22jp/atomic-chrome)) loaded and the server is running (`M-x atomic-chrome-start-server`).
 
