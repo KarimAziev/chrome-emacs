@@ -3,4 +3,6 @@ export const fileExtensionsByLanguage: { [key: string]: string } = {
   htmlmixed: 'html',
   html: 'html',
   javascript: 'js',
+  latex: 'tex',
+  python: 'py',
 };
