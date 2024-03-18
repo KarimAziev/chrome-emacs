@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 0.2.2 (2024-03-18)
+
+- Manually configure file extensions for the `python` and `latex` languages in CodeMirror.
+- Add a CodeMirror utility for language search with partial and fuzzy matching.
+
 ## Version 0.2.1 (2024-03-14)
 
 - Added selection handling in the Ace editor.
