@@ -15,3 +15,9 @@ export const htmlEscape = <T>(s: T) =>
 
 export const replaceNonBreakingSpaces = <T>(s: T, rep = ' ') =>
   isString(s) ? s.replace(/\u00A0/g, rep) : s;
+
+export const isValueMatches = (value: string, str: string): boolean => {
+  // Split the string into segments based on non-word characters to consider entire words/phrases only
+  const segments = str.toLowerCase().split(/\W+/);
+  return segments.includes(value.toLowerCase());
+};
