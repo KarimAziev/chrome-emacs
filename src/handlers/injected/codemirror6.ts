@@ -1,10 +1,8 @@
 import BaseInjectedHandler from '@/handlers/injected/base';
 import { UpdateTextPayload } from '@/handlers/types';
 import { fileExtensionsByLanguage } from '@/handlers/config/codemirror';
-import 'codemirror/mode/meta';
-import DummyCodeMirror from 'dummy-codemirror';
-import { isNumber, isString } from '@/util/guard';
-import { isValueMatches } from '@/util/string';
+import { isNumber } from '@/util/guard';
+import { codeMirrorSearchLanguage } from '@/util/codemirror';
 
 export type EditorView = import('@codemirror/view').EditorView;
 
@@ -64,6 +62,13 @@ class InjectedCodeMirror6Handler extends BaseInjectedHandler<CMContentElement> {
     this.showCursor();
   }
 
+  /**
+   * Generates a selection within the editor based on the provided options.
+   * @param options - Optional parameters including line number, column, and selections.
+   * @returns A selection object or undefined.
+   * @private
+   */
+
   private getSelection(options?: UpdateTextPayload) {
     const selections = options?.selections?.map(({ start, end }) => ({
       anchor: end,
@@ -82,6 +87,9 @@ class InjectedCodeMirror6Handler extends BaseInjectedHandler<CMContentElement> {
     return selection || undefined;
   }
 
+  /**
+   * Shows the cursor within the editor's visual element.
+   */
   showCursor() {
     const visual = this.getVisualElement();
 
@@ -94,6 +102,10 @@ class InjectedCodeMirror6Handler extends BaseInjectedHandler<CMContentElement> {
     }
   }
 
+  /**
+   * Retrieves the current cursor position within the editor.
+   * @returns An object containing the line number and column of the cursor.
+   */
   getPosition() {
     try {
       const offset = this.editor.state.selection.main.head;
@@ -107,15 +119,25 @@ class InjectedCodeMirror6Handler extends BaseInjectedHandler<CMContentElement> {
       };
     }
   }
-
+  /**
+   * Fetches the visual element corresponding to the editor.
+   * @returns The HTML div element representing the visual editor component.
+   */
   getVisualElement() {
     return this.elem.closest<HTMLDivElement>('.cm-editor');
   }
 
+  /**
+   * Binds a change listener to the editor's DOM element.
+   * @param f - The function to execute when an input event occurs.
+   */
   bindChange(f: () => void): void {
     this.editor.dom.addEventListener('input', f);
   }
-
+  /**
+   * Removes a previously bound change listener from the editor's DOM element.
+   * @param f - The function to remove from the event listeners.
+   */
   unbindChange(f: () => void): void {
     this.editor.dom.removeEventListener('input', f);
   }
@@ -127,6 +149,7 @@ class InjectedCodeMirror6Handler extends BaseInjectedHandler<CMContentElement> {
   getExtension(): string | null {
     const currentModeName = this.elem.dataset.language;
     const languageNormalized = currentModeName?.toLowerCase();
+
     if (!languageNormalized) {
       return null;
     }
@@ -135,41 +158,7 @@ class InjectedCodeMirror6Handler extends BaseInjectedHandler<CMContentElement> {
     if (fileExtensionsByLanguage[languageNormalized]) {
       return fileExtensionsByLanguage[languageNormalized];
     }
-
-    if (!DummyCodeMirror.modeInfo) {
-      return null;
-    }
-
-    const secondLine = [];
-    const thirdLine = [];
-    for (const mode of DummyCodeMirror.modeInfo) {
-      const name = mode?.name?.toLowerCase() || mode?.mode.toLowerCase();
-      if (name === languageNormalized && mode.ext) {
-        const extension = mode.ext[0];
-        return extension;
-      } else if (mode.ext && mode.ext[0]) {
-        const vals = Object.values(mode);
-
-        if (
-          vals.find(
-            (v) => isString(v) && languageNormalized === v.toLowerCase(),
-          )
-        ) {
-          secondLine.push(mode);
-        } else if (
-          vals.find((v) => isString(v) && isValueMatches(languageNormalized, v))
-        ) {
-          thirdLine.push(mode);
-        }
-      }
-    }
-
-    const fallbackResult =
-      secondLine.find((m) => m.ext) || thirdLine.find((m) => m.ext);
-
-    const fallbackExt = fallbackResult?.ext && fallbackResult?.ext[0];
-
-    return fallbackExt || null;
+    return codeMirrorSearchLanguage(languageNormalized) || null;
   }
 }
 
