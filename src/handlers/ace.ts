@@ -14,6 +14,10 @@ class AceHandler extends InjectorHandler {
   constructor(elem: HTMLElement, contentEvents: IContentEventsBinder) {
     super(elem, contentEvents, 'ace');
   }
+
+  static getHintArea(elem: HTMLElement) {
+    return elem.parentElement;
+  }
   /**
    * Determines if the handler can manage the provided element, specifically for Ace editor elements.
    * @param elem - The element to check.
@@ -21,6 +25,10 @@ class AceHandler extends InjectorHandler {
    */
   static canHandle(elem: HTMLElement): boolean {
     return elem.classList.contains(aceClassName);
+  }
+
+  static getName() {
+    return 'Ace';
   }
 }
 
