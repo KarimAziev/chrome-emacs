@@ -5,14 +5,15 @@ import {
   UpdateTextPayload,
   LoadedOptions,
   ValueSetEmitOptions,
+  CustomDocument,
 } from '@/handlers/types';
 
 /**
  * Base handler class implementing `IHandler` interface.
  */
 export default class BaseHandler extends EventEmitter implements IHandler {
-  protected document: Document;
-  protected window: Window | null;
+  public document: CustomDocument;
+  public window: Window;
   protected elem: HTMLElement;
 
   /**
@@ -26,7 +27,9 @@ export default class BaseHandler extends EventEmitter implements IHandler {
       throw new Error('The element must be within a document');
     }
     this.document = elem.ownerDocument;
-    this.window = this.document.defaultView;
+    this.window = this.document.defaultView as NonNullable<
+      typeof this.document.defaultView
+    >;
     this.elem = elem;
     contentEvents.bind(this, this.window as Window);
   }

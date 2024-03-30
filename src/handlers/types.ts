@@ -48,6 +48,10 @@ export interface LoadedOptions extends IPosition {
   rect?: DOMRect;
 }
 
+export interface CustomDocument extends Document {
+  atomicScriptInjected?: boolean;
+}
+
 /**
  * Interface for handler operations.
  */
@@ -83,6 +87,9 @@ export interface IHandler {
    * @param useCapture - Whether the event was to be captured.
    */
   unbindChange(f: (event: Event) => void, useCapture?: boolean): void;
+
+  window: Window;
+  document: CustomDocument;
 }
 
 /**
@@ -90,13 +97,23 @@ export interface IHandler {
  */
 export interface IHandlerConstructor<Elem = Element> {
   new (elem: Elem, contentEvents: IContentEventsBinder): IHandler;
-
   /**
    * Determines if the handler can manage the provided element.
    * @param elem - The element to check.
    * @returns A boolean indicating if the handler can manage the element.
    */
   canHandle(elem: Elem): boolean;
+  /**
+   * Determines the area for displaying hint
+   * @param elem - The element to check.
+   * @returns an
+   */
+  getHintArea(elem: Elem): HTMLElement | null;
+  /**
+   * Retrieves the name for the handler.
+   * @returns The name identifier of the handler.
+   */
+  getName(): string;
 }
 
 /**
