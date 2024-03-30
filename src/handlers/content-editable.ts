@@ -1,10 +1,35 @@
 import BaseHandler from '@/handlers/base';
-import { htmlEscape } from '@/util/string';
+import { CustomEventDispatcher } from '@/util/event-dispatcher';
+import { estimateParent } from '@/util/dom';
+import { LoadedOptions } from '@/handlers/types';
+import { VISUAL_ELEMENT_SELECTOR } from '@/handlers/config/const';
 
 /**
  * Handler for contenteditable elements, extending the base handler functionality.
  */
 class ContentEditableHandler extends BaseHandler {
+  dispatcher!: CustomEventDispatcher<HTMLElement>;
+  getVisualElement(): Element | HTMLElement | null {
+    return estimateParent(this.elem);
+  }
+  load(): Promise<LoadedOptions> {
+    this.dispatcher = new CustomEventDispatcher(this.elem);
+    const parentEl = this.getVisualElement();
+    const rect = parentEl?.getBoundingClientRect();
+    const screenY = window.screenY;
+    this.dispatcher.click();
+    this.dispatcher.focus();
+
+    const payload = {
+      rect,
+    };
+    if (payload?.rect) {
+      payload.rect.y = (rect?.y || 0) + screenY;
+      payload.rect.x = (rect?.x || 0) + window.screenX;
+    }
+
+    return Promise.resolve(payload);
+  }
   /**
    * Retrieves the text value from a contenteditable element.
    * @returns A promise resolved with the extracted text.
@@ -31,6 +56,7 @@ class ContentEditableHandler extends BaseHandler {
         } else if (child.nodeType === Node.ELEMENT_NODE) {
           const element = child as Element;
           const tag = element.tagName.toLowerCase();
+
           switch (tag) {
             case 'div':
               return this.extractText(element, { noLinebreak: true }) + '\n';
@@ -60,6 +86,38 @@ class ContentEditableHandler extends BaseHandler {
     return elem.outerHTML;
   }
 
+  private selectAllContent() {
+    if (this.elem?.focus) {
+      this.elem.focus();
+    }
+
+    const selection = window.getSelection();
+
+    selection?.removeAllRanges();
+
+    const range = document.createRange();
+
+    range.selectNodeContents(this.elem);
+
+    selection?.addRange(range);
+  }
+
+  private replaceSelectedContent(value: string) {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+      const div = document.createElement('div');
+      div.innerHTML = value;
+      const frag = document.createDocumentFragment();
+      let lastNode;
+      while ((lastNode = div.firstChild)) {
+        frag.appendChild(lastNode);
+      }
+      range.insertNode(frag);
+    }
+  }
+
   /**
    * Sets the value of a contenteditable element, converting line breaks to appropriate HTML.
    * @param value - The text value to set, with line breaks indicating new lines.
@@ -71,12 +129,22 @@ class ContentEditableHandler extends BaseHandler {
         if (v.trim().length === 0) {
           return '<br>';
         }
-        // Escapes HTML characters in the text and wraps lines in <div> tags
-        return '<div>' + htmlEscape(v) + '</div>';
+        return '<div>' + v + '</div>';
       })
       .join('');
-    this.elem.innerHTML = htmlValue;
-    super.setValue(value);
+    this.selectAllContent();
+    this.replaceSelectedContent(htmlValue);
+    const selection = window.getSelection();
+
+    selection?.removeAllRanges();
+  }
+
+  static getName() {
+    return 'content-editable';
+  }
+
+  static getHintArea(elem: HTMLElement) {
+    return elem;
   }
 
   /**
@@ -85,7 +153,10 @@ class ContentEditableHandler extends BaseHandler {
    * @returns True if the element is contentEditable.
    */
   static canHandle(elem: HTMLElement) {
-    return elem.isContentEditable;
+    return (
+      elem.isContentEditable &&
+      !Object.values(VISUAL_ELEMENT_SELECTOR).some((v) => elem.closest(v))
+    );
   }
 }
 
