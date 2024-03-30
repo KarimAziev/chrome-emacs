@@ -1,6 +1,7 @@
 import InjectorHandler from '@/handlers/injector';
 import type { IContentEventsBinder } from '@/handlers/injector';
 import type { UpdateTextPayload } from '@/handlers/types';
+import { VISUAL_ELEMENT_SELECTOR } from '@/handlers/config/const';
 
 /**
  * A handler for interacting with Monaco editor instances specifically.
@@ -32,6 +33,10 @@ class MonacoHandler extends InjectorHandler {
     return Promise.resolve(value);
   }
 
+  static getHintArea(elem: HTMLElement) {
+    return elem.closest<HTMLElement>(VISUAL_ELEMENT_SELECTOR.monaco);
+  }
+
   /**
    * Determines if the given element can be managed by this handler.
    * @param elem - The element to inspect.
@@ -40,9 +45,13 @@ class MonacoHandler extends InjectorHandler {
   static canHandle(elem: HTMLTextAreaElement) {
     const enabled =
       elem.tagName?.toLowerCase() === 'textarea' &&
-      elem.closest('.monaco-editor');
+      elem.closest(VISUAL_ELEMENT_SELECTOR.monaco);
 
     return !!enabled;
+  }
+
+  static getName() {
+    return 'monaco';
   }
 }
 
