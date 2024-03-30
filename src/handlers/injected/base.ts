@@ -4,6 +4,7 @@ import {
   PostToInjectorPayloadMap,
   BaseInjectedPostType,
 } from '@/handlers/types';
+import { isString } from '@/util/guard';
 
 /**
  * A base class for creating handlers that are injected into web pages.
@@ -17,6 +18,10 @@ export default class BaseInjectedHandler<Elem extends Element> {
   constructor(elem: Elem, uuid: string) {
     this.elem = elem;
     this.uuid = uuid;
+  }
+
+  static async make<El extends Element>(elem: El, uuid: string) {
+    return new this(elem, uuid);
   }
   /**
    * Sets up the handler, loading necessary resources and binding change events.
@@ -53,12 +58,23 @@ export default class BaseInjectedHandler<Elem extends Element> {
    * Handles 'getValue' messages by posting the current value to the injector.
    */
   onGetValue(): void {
-    const position = this.getPosition();
+    const text = this.getValue();
 
-    this.postToInjector('value', {
-      text: this.getValue(),
-      ...position,
-    });
+    if (isString(text)) {
+      const position = this.getPosition();
+      this.postToInjector('value', {
+        text,
+        ...position,
+      });
+    } else {
+      text.then((v) => {
+        const position = this.getPosition();
+        this.postToInjector('value', {
+          text: v,
+          ...position,
+        });
+      });
+    }
   }
 
   /**
@@ -73,7 +89,7 @@ export default class BaseInjectedHandler<Elem extends Element> {
   /**
    * Retrieves the value from the element. Must be implemented by subclasses.
    */
-  getValue(): string {
+  getValue(): string | Promise<string> {
     throw new Error('not implemented');
   }
 
