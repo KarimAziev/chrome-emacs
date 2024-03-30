@@ -9,6 +9,7 @@ import {
 import { messager } from '@/content-script-tools/message';
 import { WS_URL } from '@/background-tools/ws-bridge';
 import { normalizeRect } from '@/util/dom';
+import { CustomEventDispatcher } from '@/util/event-dispatcher';
 
 const errorMessageByCode: {
   [key: ClosedMessagePayload['code']]: Parameters<typeof messager.error>[0];
@@ -88,8 +89,15 @@ class TextSyncer {
    * @param handler - The handler instance managing the text element.
    * @returns A function to be used as a change listener.
    */
-  private makeTextChangeListener(port: chrome.runtime.Port, handler: IHandler) {
-    return () => {
+  private makeTextChangeListener(
+    port: chrome.runtime.Port,
+    handler: IHandler,
+  ): Parameters<IHandler['bindChange']>[0] {
+    return (event) => {
+      if (CustomEventDispatcher.isAtomicChromeCustomEvent(event)) {
+        return;
+      }
+
       handler.getValue().then((data) => {
         this.post(port, 'updateText', data);
       });
