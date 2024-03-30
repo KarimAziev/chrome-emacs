@@ -1,3 +1,3 @@
-import { readAndLoadElement } from '@/util/readAndLoadElement';
+import ElementReader from '@/content-script-tools/element-reader';
 
-readAndLoadElement();
+ElementReader.readAndLoadElement();
