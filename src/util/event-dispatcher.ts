@@ -1,5 +1,8 @@
-import { CustomEventDetail } from '@/handlers/types';
 import { debounce } from '@/util/debounce';
+
+export interface CustomEventDetail {
+  atomicChromeSynteticEvent: boolean;
+}
 
 export class CustomEventDispatcher<El extends HTMLElement> {
   elem: El;

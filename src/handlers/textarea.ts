@@ -1,25 +1,33 @@
 import BaseHandler from '@/handlers/base';
+import { CustomEventDispatcher } from '@/util/event-dispatcher';
 import { UpdateTextPayload, LoadedOptions } from '@/handlers/types';
 import { estimateParent, setSelectionRange } from '@/util/dom';
+import { VISUAL_ELEMENT_SELECTOR } from '@/handlers/config/const';
 
 class TextareaHandler extends BaseHandler {
   elem: HTMLTextAreaElement;
+  dispatcher!: CustomEventDispatcher<HTMLTextAreaElement>;
   /**
    * Sets a value to the textarea element and dispatches an 'input' event.
    * @param value - The value to set on the textarea.
    */
+
   setValue(value: string, options?: UpdateTextPayload) {
+    this.dispatcher.beforeinput();
+
     this.elem.value = value;
-
-    const event = new Event('input', {
-      bubbles: true,
-      cancelable: true,
-    });
-
     super.setValue(value, options);
-    this.elem.dispatchEvent(event);
+
+    this.elem.focus();
+    this.dispatcher.input();
 
     this.setSelection(options?.selections);
+
+    this.dispatcher.keydown();
+    this.dispatcher.keypress();
+    this.dispatcher.keyup();
+
+    this.dispatcher.change();
   }
 
   private setSelection(selections: UpdateTextPayload['selections']) {
@@ -28,6 +36,7 @@ class TextareaHandler extends BaseHandler {
     }
     const { start, end } = selections[0];
     setSelectionRange(this.elem, start, end);
+
     if (start === end) {
       this.elem.selectionEnd = this.elem.selectionEnd + 1;
     }
@@ -57,6 +66,7 @@ class TextareaHandler extends BaseHandler {
   }
 
   load(): Promise<LoadedOptions> {
+    this.dispatcher = new CustomEventDispatcher(this.elem);
     const parentEl = this.getVisualElement();
     const rect = parentEl?.getBoundingClientRect();
     const screenY = window.screenY;
@@ -74,6 +84,10 @@ class TextareaHandler extends BaseHandler {
     return Promise.resolve(payload);
   }
 
+  static getHintArea(elem: HTMLElement) {
+    return estimateParent(elem);
+  }
+
   /**
    * Static method to check if the handler can manage the given element.
    * @param elem - The element to check.
@@ -83,7 +97,14 @@ class TextareaHandler extends BaseHandler {
     if (!elem.tagName) {
       return false;
     }
-    return elem.tagName.toLowerCase() === 'textarea';
+    return (
+      elem.tagName.toLowerCase() === 'textarea' &&
+      !Object.values(VISUAL_ELEMENT_SELECTOR).some((v) => elem.closest(v))
+    );
+  }
+
+  static getName() {
+    return 'textarea';
   }
 }
 
