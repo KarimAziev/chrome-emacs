@@ -1,6 +1,7 @@
 import InjectorHandler from '@/handlers/injector';
 import { UpdateTextPayload } from '@/handlers/types';
 import type { IContentEventsBinder } from '@/handlers/injector';
+import { VISUAL_ELEMENT_SELECTOR } from '@/handlers/config/const';
 
 /**
  * Handler class for interfacing with CodeMirror version 5 editors through InjectorHandler.
@@ -30,15 +31,21 @@ class CodeMirror5Handler extends InjectorHandler {
    * @returns True if the element can be handled by this handler, false otherwise.
    */
 
+  static getParentElement(elem: HTMLElement) {
+    return elem.closest<HTMLElement>(VISUAL_ELEMENT_SELECTOR.codeMirror5);
+  }
+
+  static getHintArea(elem: HTMLElement) {
+    const parent = CodeMirror5Handler.getParentElement(elem);
+    return parent;
+  }
+
   static canHandle(elem: HTMLElement) {
-    let res: null | HTMLElement = elem;
-    while (res) {
-      if (res.classList && res.classList.contains('CodeMirror')) {
-        return true;
-      }
-      res = res.parentElement;
-    }
-    return false;
+    return !!CodeMirror5Handler.getParentElement(elem);
+  }
+
+  static getName() {
+    return 'codemirror5';
   }
 }
 

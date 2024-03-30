@@ -4,24 +4,19 @@ import { fileExtensionsByLanguage } from '@/handlers/config/codemirror';
 import { UpdateTextPayload } from '@/handlers/types';
 import { isNumber } from '@/util/guard';
 import { codeMirrorSearchLanguage } from '@/util/codemirror';
+import { VISUAL_ELEMENT_SELECTOR } from '@/handlers/config/const';
 
-declare global {
-  interface HTMLDivElement {
-    CodeMirror: Editor;
-  }
+export interface CodeMirrorElement extends HTMLDivElement {
+  CodeMirror: Editor;
 }
 
-class InjectedCodeMirror5Handler extends BaseInjectedHandler<HTMLDivElement> {
+class InjectedCodeMirror5Handler extends BaseInjectedHandler<CodeMirrorElement> {
   editor!: Editor;
 
   async load(): Promise<void> {
-    while (!this.elem.classList.contains('CodeMirror')) {
-      if (!this.elem.parentElement) {
-        throw new Error('Parent element not found');
-      }
-      this.elem = this.elem.parentElement as HTMLDivElement;
+    if (!this.elem.CodeMirror) {
+      this.elem = this.getVisualElement();
     }
-
     this.editor = this.elem.CodeMirror;
   }
 
@@ -31,7 +26,10 @@ class InjectedCodeMirror5Handler extends BaseInjectedHandler<HTMLDivElement> {
 
   setValue(text: string, options?: UpdateTextPayload): void {
     this.executeSilenced(() => {
-      this.editor.setValue(text);
+      if (this.editor.getValue() !== text) {
+        this.editor.setValue(text);
+      }
+
       this.editor?.focus();
       this.setPosition(options);
       this.setSelection(options?.selections);
@@ -99,10 +97,9 @@ class InjectedCodeMirror5Handler extends BaseInjectedHandler<HTMLDivElement> {
   }
 
   getVisualElement() {
-    const cm = this.elem.closest('.CodeMirror, .CodeMirror-linewidget');
-    if (cm && cm.matches('.CodeMirror')) {
-      return cm.querySelector('.CodeMirror-sizer') || null;
-    }
+    return this.elem.closest<CodeMirrorElement>(
+      VISUAL_ELEMENT_SELECTOR.codeMirror5,
+    ) as CodeMirrorElement;
   }
 
   getExtension(): string | null {
