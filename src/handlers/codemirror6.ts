@@ -1,6 +1,7 @@
 import InjectorHandler from '@/handlers/injector';
 import type { IContentEventsBinder } from '@/handlers/injector';
 import { UpdateTextPayload } from '@/handlers/types';
+import { VISUAL_ELEMENT_SELECTOR } from '@/handlers/config/const';
 
 /**
  * Handler class for interfacing with CodeMirror version 6 editors through InjectorHandler.
@@ -25,6 +26,15 @@ class CodeMirror6Handler extends InjectorHandler {
   }
 
   /**
+   * Retrieves the closest ancestor of the specified element that is a CodeMirror editor container.
+   * @param elem - The HTMLElement from which to find the closest CodeMirror editor container.
+   * @returns The closest HTMLElement that is a CodeMirror editor container, or null if none is found.
+   */
+  static getHintArea(elem: HTMLElement) {
+    return elem.closest<HTMLElement>(VISUAL_ELEMENT_SELECTOR.cmEditor);
+  }
+
+  /**
    * Determines if the given HTMLElement can be handled by CodeMirror6Handler.
    * @param elem - The HTMLElement to check for compatibility with CodeMirror6Handler.
    * @returns True if the element can be handled by this handler, false otherwise.
@@ -39,7 +49,16 @@ class CodeMirror6Handler extends InjectorHandler {
       }
       res = res.parentElement;
     }
+
     return false;
+  }
+
+  /**
+   * Retrieves the name identifier for the CodeMirror6Handler.
+   * @returns The name identifier of the handler.
+   */
+  static getName() {
+    return 'codemirror6';
   }
 }
 
