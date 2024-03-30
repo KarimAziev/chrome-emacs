@@ -12,7 +12,7 @@ import { getCssSelector } from '@/util/dom';
 /**
  * A specialized handler extending BaseHandler for injecting and communicating with scripts.
  */
-export default class nInjectorHandler extends BaseHandler {
+export default class InjectorHandler extends BaseHandler {
   private name: string;
   private uuid: string;
   private _getValueCallback: ((payload: UpdateTextPayload) => void) | null;
@@ -32,16 +32,12 @@ export default class nInjectorHandler extends BaseHandler {
     this.name = name;
     this.uuid = uuidv4();
 
-    (this.window as Window).addEventListener(
-      'message',
-      (message: MessageEvent) => {
-        // Ignores irrelevant messages.
-        if (message.source !== this.window || message.data.uuid !== this.uuid) {
-          return;
-        }
-        this.emit(message.data.type, message.data.payload);
-      },
-    );
+    this.window.addEventListener('message', (message: MessageEvent) => {
+      if (message.source !== this.window || message.data.uuid !== this.uuid) {
+        return;
+      }
+      this.emit(message.data.type, message.data.payload);
+    });
 
     this._getValueCallback = null;
   }
@@ -52,6 +48,7 @@ export default class nInjectorHandler extends BaseHandler {
 
   async load() {
     const elemSelector = getCssSelector(this.elem);
+
     return new Promise<LoadedOptions>((resolve) => {
       this.injectScript(() => {
         this.postToInjected('initialize', {
@@ -103,14 +100,14 @@ export default class nInjectorHandler extends BaseHandler {
    * @param onload - The callback to execute when the script loads.
    */
   private injectScript(onload?: () => void): void {
-    if ((this.document as any).atomicScriptInjected) {
+    if (this.document.atomicScriptInjected) {
       if (onload) {
         onload();
       }
       return;
     }
 
-    (this.document as any).atomicScriptInjected = true;
+    this.document.atomicScriptInjected = true;
     this.executeInjectScript(onload);
   }
 
@@ -148,10 +145,7 @@ export default class nInjectorHandler extends BaseHandler {
       payload: payload || {},
     };
 
-    (this.window as Window).postMessage(
-      message,
-      (this.window as Window).location.origin,
-    );
+    this.window.postMessage(message, this.window.location.origin);
   }
 
   /**
