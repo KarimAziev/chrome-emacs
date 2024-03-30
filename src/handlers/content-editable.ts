@@ -123,6 +123,10 @@ class ContentEditableHandler extends BaseHandler {
    * @param value - The text value to set, with line breaks indicating new lines.
    */
   setValue(value: string) {
+    this.dispatcher.click();
+    this.dispatcher.focus();
+    this.dispatcher.beforeinput();
+
     const htmlValue = value
       .split('\n')
       .map((v) => {
@@ -134,9 +138,16 @@ class ContentEditableHandler extends BaseHandler {
       .join('');
     this.selectAllContent();
     this.replaceSelectedContent(htmlValue);
+
     const selection = window.getSelection();
 
     selection?.removeAllRanges();
+
+    this.dispatcher.keydown();
+    this.dispatcher.keypress();
+    this.dispatcher.keyup();
+
+    this.dispatcher.change();
   }
 
   static getName() {
