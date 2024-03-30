@@ -281,7 +281,7 @@ export function setSelectionRange(
   textarea.setSelectionRange(selectionStart, selectionEnd);
 }
 
-export const estimateParent = (elem: Element) => {
+export const estimateParent = <El extends Element>(elem: El) => {
   const editableElemsSelector = getCssSelectorsOfEditable();
   const parent = elem.parentElement;
   if (parent?.querySelectorAll(editableElemsSelector).length === 1) {
