@@ -3,6 +3,8 @@ import { UpdateTextPayload } from '@/handlers/types';
 import { fileExtensionsByLanguage } from '@/handlers/config/codemirror';
 import { isNumber } from '@/util/guard';
 import { codeMirrorSearchLanguage } from '@/util/codemirror';
+import { CustomEventDispatcher } from '@/util/event-dispatcher';
+import { VISUAL_ELEMENT_SELECTOR } from '@/handlers/config/const';
 
 export type EditorView = import('@codemirror/view').EditorView;
 
@@ -20,11 +22,28 @@ interface CMContentElement extends HTMLDivElement {
  */
 class InjectedCodeMirror6Handler extends BaseInjectedHandler<CMContentElement> {
   editor!: EditorView;
+  dispatcher!: CustomEventDispatcher<CMContentElement>;
 
   /**
    * Initializes the editor from the element's properties.
    */
   async load(): Promise<void> {
+    if (!this.elem.cmView || !this.elem.cmView?.view?.state) {
+      const parent = this.getVisualElement();
+      if (parent) {
+        const found = Array.from(parent.querySelectorAll<HTMLElement>('*'))
+          .flat()
+          .find((el) => (el as CMContentElement).cmView?.view?.state);
+
+        if (found) {
+          this.elem = found as CMContentElement;
+        }
+      }
+    }
+
+    this.dispatcher = new CustomEventDispatcher(this.elem);
+    this.dispatcher.click();
+    this.dispatcher.focus();
     this.editor = this.elem.cmView.view;
   }
   /**
@@ -44,13 +63,18 @@ class InjectedCodeMirror6Handler extends BaseInjectedHandler<CMContentElement> {
    */
   setValue(text: string, options?: UpdateTextPayload): void {
     const selection = this.getSelection(options);
-    this.editor.dispatch({
-      changes: {
-        from: 0,
-        to: this.editor.state.doc.length,
-        insert: text,
-      },
-    });
+
+    if (this.getValue() !== text) {
+      this.editor.dispatch({
+        changes: {
+          from: 0,
+          to: this.editor.state.doc.length,
+          insert: text,
+        },
+      });
+    }
+
+    this.editor.focus();
 
     if (selection) {
       this.editor.dispatch({
@@ -59,7 +83,10 @@ class InjectedCodeMirror6Handler extends BaseInjectedHandler<CMContentElement> {
         scrollIntoView: true,
       });
     }
+
     this.showCursor();
+
+    this.dispatcher.change();
   }
 
   /**
@@ -84,6 +111,7 @@ class InjectedCodeMirror6Handler extends BaseInjectedHandler<CMContentElement> {
             options.column -
             1,
         });
+
     return selection || undefined;
   }
 
@@ -124,7 +152,7 @@ class InjectedCodeMirror6Handler extends BaseInjectedHandler<CMContentElement> {
    * @returns The HTML div element representing the visual editor component.
    */
   getVisualElement() {
-    return this.elem.closest<HTMLDivElement>('.cm-editor');
+    return this.elem.closest<HTMLDivElement>(VISUAL_ELEMENT_SELECTOR.cmEditor);
   }
 
   /**
@@ -132,14 +160,14 @@ class InjectedCodeMirror6Handler extends BaseInjectedHandler<CMContentElement> {
    * @param f - The function to execute when an input event occurs.
    */
   bindChange(f: () => void): void {
-    this.editor.dom.addEventListener('input', f);
+    this.editor?.dom.addEventListener('input', f);
   }
   /**
    * Removes a previously bound change listener from the editor's DOM element.
    * @param f - The function to remove from the event listeners.
    */
   unbindChange(f: () => void): void {
-    this.editor.dom.removeEventListener('input', f);
+    this.editor?.dom.removeEventListener('input', f);
   }
 
   /**
