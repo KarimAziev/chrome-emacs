@@ -1,12 +1,11 @@
 import type { editor, IDisposable } from 'monaco-editor';
-import BaseInjectedHandler from '@/handlers/injected/base';
-import { findAncestorWithClass } from '@/util/dom';
 import { fileExtensionsByLanguage } from '@/handlers/config/monaco';
 import { isFunction, isString, isNumber } from '@/util/guard';
 import { UpdateTextPayload } from '@/handlers/types';
-import { replaceNonBreakingSpaces } from '@/util/string';
 import { ElementEventMonitor } from '@/util/event-monitor';
 import { log } from '@/util/log';
+import { generateStringHash } from '@/util/string';
+import MonacoBase from '@/handlers/injected/monaco-base';
 
 declare global {
   /**
@@ -26,18 +25,18 @@ interface ExtendedModel extends editor.ITextModel {
 }
 
 /**
- * Handler for injecting Monaco Editor functionalities into HTMLTextAreaElements.
+ * Handler for injecting Monaco Editor when monaco API is available globally.
  */
-class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
+class InjectedMonacoHandler extends MonacoBase {
   /**
    * Represents the monaco editor instance. This is undefined if Monaco has not been initialized.
    */
-  editor?: typeof window.monaco.editor;
+  editor?: typeof window.monaco.editor | ReturnType<typeof editor.create>;
   /**
    * The text model representing the content within the Monaco editor. This model provides
    * functionalities such as setting/getting value, observing changes etc.
    */
-  model?: ExtendedModel;
+  model: ExtendedModel | null;
   /**
    * A reference to the currently focused Monaco code editor instance.
    * This is used for syncing the cursor position.
@@ -65,23 +64,16 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
    * @param elem - The HTMLTextAreaElement to be enhanced.
    * @param uuid - An identifier for the instance.
    */
-  constructor(elem: HTMLTextAreaElement, uuid: string) {
+  constructor(
+    elem: HTMLTextAreaElement,
+    uuid: string,
+    focusedEditor?: editor.ICodeEditor,
+  ) {
     super(elem, uuid);
     this.silenced = false;
+    this.focusedEditor = focusedEditor;
   }
-  /**
-   * Retrieves the URI of the currently targeted Monaco editor element.
-   * This method searches up the DOM hierarchy to find an element with a `data-uri` attribute,
-   * which is then returned as a Monaco `Uri` object.
-   *
-   * @returns The `Uri` of the current editor, or `undefined` if the URI cannot be determined.
-   */
-  private getUri() {
-    const editorEl = this.elem?.closest('.monaco-editor');
 
-    return (editorEl as HTMLElement)?.dataset
-      ?.uri as unknown as editor.ITextModel['uri'];
-  }
   /**
    * Retrieves the text model from a given URI. This method uses the editor's
    * `getModel` method with the URI obtained from `getUri` to fetch the
@@ -91,12 +83,16 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
      the model cannot be retrieved.
    */
   private getModel() {
-    const uri = this.getUri();
-    return (
-      uri &&
-      this.editor?.getModel &&
-      (this.editor.getModel(uri) as ExtendedModel)
-    );
+    const uri = this.getUri() as unknown as editor.ITextModel['uri'];
+    if (!uri) {
+      return null;
+    }
+
+    const model =
+      (this.editor?.getModel && this.editor?.getModel(uri)) ||
+      (this.focusedEditor as unknown as typeof editor)?.getModel(uri);
+
+    return model as ExtendedModel;
   }
 
   /**
@@ -104,27 +100,31 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
    * @returns A promise indicating the completion of the loading process.
    */
 
-  load() {
+  async load() {
     return new Promise<void>((resolve) => {
       try {
-        if (typeof window.monaco !== 'undefined' && window.monaco.editor) {
-          this.editor = window.monaco.editor;
+        this.editor = window?.monaco?.editor;
+        this.model = this.getModel();
 
+        if (this.editor) {
           const editors =
             isFunction(window.monaco.editor?.getEditors) &&
             window.monaco.editor.getEditors();
 
-          this.model = this.getModel();
-
           if (Array.isArray(editors)) {
-            this.focusedEditor = editors?.find(
-              (e) => isFunction(e.getModel) && e.getModel() === this.model,
-            );
+            this.focusedEditor =
+              this.focusedEditor ||
+              editors?.find(
+                (e) => isFunction(e.getModel) && e.getModel() === this.model,
+              );
           } else {
             this.hackMonaco();
           }
 
-          if (!this.focusedEditor?.hasTextFocus()) {
+          if (
+            this.focusedEditor?.hasTextFocus &&
+            !this.focusedEditor?.hasTextFocus()
+          ) {
             this.focusedEditor?.focus();
           }
         }
@@ -242,14 +242,11 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
   setValue(value: string, options?: UpdateTextPayload) {
     this.executeSilenced(() => {
       const val = this.getValue();
-
-      if (val !== value) {
+      if (isString(val) && val !== value) {
         if (this.focusedEditor?.setValue) {
           this.focusedEditor.setValue(value);
         } else if (this.model) {
           this.model.setValue(value);
-        } else {
-          this.elem.value = value;
         }
       }
       this.setPosition(options);
@@ -275,10 +272,15 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
         this.focusedEditor.setPosition(position);
       }
 
-      if (this.focusedEditor?.revealPosition) {
+      if (this.focusedEditor?.revealPositionInCenterIfOutsideViewport) {
         this.focusedEditor.revealPositionInCenterIfOutsideViewport(position);
+      } else if (this.focusedEditor?.revealPosition) {
+        this.focusedEditor.revealPosition(position);
       }
-      if (!this.focusedEditor?.hasTextFocus()) {
+      if (
+        this.focusedEditor?.hasTextFocus &&
+        !this.focusedEditor?.hasTextFocus()
+      ) {
         this.focusedEditor?.focus();
       }
     }
@@ -303,18 +305,14 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
       }
     });
 
-    if (
-      mappedSelections &&
-      mappedSelections?.length > 1 &&
-      this.focusedEditor?.setSelections
-    ) {
+    if (!window?.monaco?.Selection || mappedSelections.length > 1) {
       return this.focusedEditor?.setSelections(
         mappedSelections.map(
           ([
             selectionStartLineNumber,
-            positionColumn,
-            positionLineNumber,
             selectionStartColumn,
+            positionLineNumber,
+            positionColumn,
           ]) => ({
             selectionStartColumn,
             selectionStartLineNumber,
@@ -325,38 +323,21 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
       );
     }
 
-    mappedSelections?.forEach(([a, b, c, d]) => {
-      this.focusedEditor?.setSelection(new window.monaco.Selection(a, b, c, d));
-    });
+    if (window.monaco?.Selection) {
+      mappedSelections?.forEach(([a, b, c, d]) => {
+        this.focusedEditor?.setSelection(
+          new window.monaco.Selection(a, b, c, d),
+        );
+      });
+    }
   }
 
   /**
-   * Attempts to find an ancestor element with a Monaco-related CSS class.
-   * @returns The found element or undefined.
-   */
-  private findAncestorWithMonacoClass() {
-    return (
-      this.getVisualElement() ||
-      findAncestorWithClass(this.elem, 'editor-instance')
-    );
-  }
-
-  /**
-   * Retrieves the current value from the Monaco editor model or textarea.
+   * Retrieves the current value from the Monaco editor or model
    * @returns The current value as a string.
    */
   getValue() {
-    if (this.focusedEditor) {
-      return this.focusedEditor.getValue();
-    } else if (this.model) {
-      return this.model.getValue();
-    } else if (!this.elem) {
-      return '';
-    } else {
-      return replaceNonBreakingSpaces(
-        this.findAncestorWithMonacoClass()?.textContent || this.elem.value,
-      );
-    }
+    return this.focusedEditor?.getValue() || this.model?.getValue() || '';
   }
 
   /**
@@ -396,6 +377,7 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
    */
   getExtension() {
     const language = this.getModelLanguageId();
+
     const languages =
       isFunction(window.monaco?.languages?.getLanguages) &&
       window.monaco?.languages?.getLanguages();
@@ -404,7 +386,12 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
       const found = languages.find((lang) => lang?.id === language);
       return found?.extensions;
     }
-    return language && fileExtensionsByLanguage[language];
+
+    if (language && fileExtensionsByLanguage[language]) {
+      return fileExtensionsByLanguage[language];
+    }
+
+    return super.getExtension();
   }
   /**
    * Attaches a listener to the Monaco editor model's content change event. When
@@ -435,16 +422,6 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
       this.changeListener.dispose();
     }
   }
-  /**
-   * Retrieves the closest parent element that matches the Monaco editor's container.
-   * This is useful for operations requiring reference to the editor's DOM structure, such as
-   * finding the cursor or line elements.
-   *
-   * @returns The found Monaco editor container element, or undefined if not found.
-   */
-  getVisualElement() {
-    return this.elem?.closest<HTMLDivElement>('.monaco-editor');
-  }
 
   /**
    * Provides a fallback position object with `lineNumber` and `column` when
@@ -466,6 +443,7 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
       }
     } catch (error) {}
   }
+
   /**
    * Estimates the line number in the editor where the cursor is currently positioned.
    * This method finds the closest line to the cursor based on the vertical positioning
@@ -482,20 +460,21 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
     const cursorRect = cursorEl.getBoundingClientRect();
 
     // Find all line elements in the editor
-    const lineElements = Array.from(
-      parentEl.querySelectorAll('.view-lines .view-line'),
+    const linesElements = Array.from(
+      parentEl.querySelectorAll<HTMLElement>('.view-lines .view-line'),
     );
-
-    if (lineElements.length === 0) {
+    if (linesElements.length === 0) {
       return null;
     }
-    const lineElementsSorted = lineElements.sort(
-      (a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top,
+
+    const lineElementsSorted = linesElements.sort(
+      (a, b) => parseFloat(a.style?.top) - parseFloat(b.style?.top),
     );
 
     // Iterate over sorted line elements to find the one nearest to the cursor
     let nearestDistance = Infinity;
     let nearestIdx: number | null = null;
+
     for (let i = 0; i < lineElementsSorted.length; i++) {
       const lineEl = lineElementsSorted[i];
       const lineRect = lineEl.getBoundingClientRect();
@@ -507,6 +486,56 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
         nearestDistance = distance;
         nearestIdx = i + 1;
       }
+    }
+
+    if (isNumber(nearestIdx)) {
+      const strs = lineElementsSorted.map((el) =>
+        (el.textContent || '').replace(/\u00A0/g, ' '),
+      );
+
+      const idx = nearestIdx - 1;
+      const strsBefore = idx > 0 ? strs.slice(0, idx) : [];
+      const strsAfter = strs.slice(idx + 1);
+      const currLineStr = strs[idx];
+
+      const value = this.model?.getValue();
+
+      const valueLines = value?.split('\n').map((line) => ({
+        text: line,
+        hash: generateStringHash(line),
+      }));
+      const currLineHash = generateStringHash(currLineStr);
+
+      const realIdx = valueLines?.findIndex((v, i) => {
+        const isFound = v.hash === currLineHash;
+        if (isFound) {
+          const blen = strsBefore.length;
+          const fromIdx = i - blen;
+
+          const vBefore = fromIdx >= 0 ? valueLines.slice(fromIdx, i) : [];
+          const vAfter = valueLines.slice(i + 1);
+
+          return (
+            strsBefore.every(
+              (s, bi) => generateStringHash(s) === vBefore[bi]?.hash,
+            ) &&
+            strsAfter.every(
+              (s, bi) => generateStringHash(s) === vAfter[bi]?.hash,
+            )
+          );
+        }
+        return false;
+      });
+
+      if (isNumber(realIdx)) {
+        return realIdx + 1;
+      }
+
+      const visibleLen = linesElements.length;
+
+      const extraIdx = valueLines ? valueLines.length - visibleLen : 0;
+
+      nearestIdx += extraIdx;
     }
 
     return nearestIdx;
@@ -527,8 +556,9 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
       return 1;
     }
     const cursorRect = cursorEl.getBoundingClientRect();
-    const lineElement = parentEl.querySelector(
-      `.view-lines .view-line:nth-child(${lineNumber})`,
+    const lineElement = document.elementFromPoint(
+      cursorRect.left - 2,
+      cursorRect.top,
     );
     if (!lineElement) {
       return 1;
@@ -537,7 +567,6 @@ class InjectedMonacoHandler extends BaseInjectedHandler<HTMLTextAreaElement> {
     const cursorPositionWithinLine = cursorRect.left - lineRect.left;
 
     // Use tabSize from the model's options
-
     const options = this.model?.getOptions();
 
     const tabSize = options?.tabSize || 4;

@@ -21,3 +21,12 @@ export const isValueMatches = (value: string, str: string): boolean => {
   const segments = str.toLowerCase().split(/\W+/);
   return segments.includes(value.toLowerCase());
 };
+
+export function generateStringHash(text: string): number {
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    hash = (hash << 5) - hash + text.charCodeAt(i);
+    hash |= 0; // Convert to 32bit integer
+  }
+  return hash;
+}
