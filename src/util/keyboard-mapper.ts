@@ -1444,6 +1444,17 @@ export class KeyboardMapper {
   ) {
     return KeyboardMapper.keyboard[key];
   }
+
+  public static maybeTranslateToMac(props: KeyboardEventInit) {
+    if (props.ctrlKey && navigator.userAgent.indexOf('Mac') > -1) {
+      return {
+        ...props,
+        ctrlKey: false,
+        metaKey: true,
+      };
+    }
+    return props;
+  }
 }
 
 export type Keyboard = typeof KeyboardMapper.keyboard;

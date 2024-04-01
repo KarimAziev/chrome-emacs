@@ -71,13 +71,13 @@ class InjectedMonacoSimulatorHandler extends MonacoBase {
 
     const props = KeyboardMapper.getKeyConfig(key);
 
-    const eventData = {
+    const eventData = KeyboardMapper.maybeTranslateToMac({
       bubbles: true,
       cancelable: false,
       view: window,
       ...props,
       ...evData,
-    };
+    });
 
     element.dispatchEvent(new KeyboardEvent('keydown', eventData));
     element.dispatchEvent(new KeyboardEvent('keypress', eventData));
