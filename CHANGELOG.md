@@ -1,5 +1,12 @@
 # Changelog
 
+## Version 0.3.0 (2024-04-02)
+
+- The main feature is the experimental support for `vscode.dev`, `codesandbox.io`, and other sites that do not globally expose the Monaco API. See [considerations](https://github.com/KarimAziev/chrome-emacs/blob/main/docs/experimental-monaco-support.md) here.
+- Improved textarea editing. Previously, e.g., on GitHub, after editing, the submit button would remain disabled. Now, it correctly recognizes changes.
+- Hints now also highlight and make editable areas clickable, further improving the recognition of editable areas.
+- Added support for `coderpad.io`.
+
 ## Version 0.2.2 (2024-03-18)
 
 - Manually configure file extensions for the `python` and `latex` languages in CodeMirror.
