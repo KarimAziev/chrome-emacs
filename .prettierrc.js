@@ -6,4 +6,5 @@ module.exports = {
   arrowParens: 'always',
   singleQuote: true,
   bracketSpacing: true,
+  htmlWhitespaceSensitivity: 'ignore',
 };

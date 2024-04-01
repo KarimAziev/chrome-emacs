@@ -19,7 +19,7 @@
     "@types/webpack": "^5.28.5",
     "babel-loader": "^8.2.2",
     "monaco-editor": "^0.45.0",
-    "prettier": "^2.4.0",
+    "prettier": "^3.2.5",
     "rimraf": "^5.0.5",
     "string-replace-loader": "3.0.3",
     "ts-loader": "^9.5.1",
