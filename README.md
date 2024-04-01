@@ -96,17 +96,49 @@ Add the downloaded directory to the load path and require it:
 
 </details>
 
+<details><summary> Show Emacs advanced configuration example
+  </summary>
+
+```emacs-lisp
+(use-package atomic-chrome
+  :straight (atomic-chrome
+             :type git
+             :flavor nil
+             :host github
+             :repo "KarimAziev/atomic-chrome")
+  :defines atomic-chrome-create-file-strategy
+  :config
+  (setq-default atomic-chrome-buffer-open-style 'frame)
+  (setq-default atomic-chrome-auto-remove-file t)
+  (setq-default atomic-chrome-url-major-mode-alist
+                '(("ramdajs.com" . js-ts-mode)
+                  ("github.com" . gfm-mode)
+                  ("gitlab.com" . gfm-mode)
+                  ("leetcode.com" . typescript-ts-mode)
+                  ("codesandbox.io" . js-ts-mode)
+                  ("typescriptlang.org" . typescript-ts-mode)
+                  ("jsfiddle.net" . js-ts-mode)
+                  ("w3schools.com" . js-ts-mode)))
+  (add-to-list 'atomic-chrome-create-file-strategy
+               '("~/repos/ts-scratch/src/" :extension
+                 ("js" "ts" "tsx" "jsx" "cjs" "mjs"))))
+```
+
+</details>
+
 ### Usage
 
 https://github.com/KarimAziev/atomic-chrome/assets/24935940/e1f6875c-d917-4a8b-ad58-35d55eeb5cbb
 
 Ensure that Emacs is running with the [atomic-chrome fork](https://github.com/KarimAziev/atomic-chrome) (or [original atomic-chrome](https://github.com/alpha22jp/atomic-chrome)) loaded and the server is running (`M-x atomic-chrome-start-server`).
 
-1. Focus on or select from detected editable text areas, text editors, or contenteditable elements in Chrome.
+1. Run `M-x atomic-chrome-start-server` in Emacs. This is needed only once.
+
+2. Focus on or select from detected editable text areas, text editors, or contenteditable elements in Chrome.
 
 ![Hints](./hints.png)
 
-2. Activate Chrome Emacs. This can typically be done by clicking on the extension's icon or using a keyboard shortcut.
+3. Activate Chrome Emacs. This can typically be done by clicking on the extension's icon or using a keyboard shortcut.
 
 The text will now open in an Emacs buffer, ready for you to edit.
 
