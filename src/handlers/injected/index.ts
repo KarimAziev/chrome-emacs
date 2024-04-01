@@ -2,10 +2,11 @@ import injectedHandlerFactory from '@/handlers/injected/factory';
 import InjectedAceHandler from '@/handlers/injected/ace';
 import InjectedCodeMirror5Handler from '@/handlers/injected/codemirror5';
 import InjectedCodeMirror6Handler from '@/handlers/injected/codemirror6';
-import InjectedMonacoHandler from '@/handlers/injected/monaco';
+import MonacoSwitcher from '@/handlers/injected/monaco-switcher';
 
 injectedHandlerFactory.registerHandler('ace', InjectedAceHandler);
-injectedHandlerFactory.registerHandler('monaco', InjectedMonacoHandler);
+injectedHandlerFactory.registerHandler('monaco', MonacoSwitcher);
+
 injectedHandlerFactory.registerHandler(
   'codemirror6',
   InjectedCodeMirror6Handler,

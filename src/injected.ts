@@ -27,6 +27,7 @@ window.addEventListener('message', function (message: MessageEvent) {
   if (!message) {
     return;
   }
+
   if (!isSourceTrusted(message.source)) {
     return;
   }
@@ -45,14 +46,13 @@ window.addEventListener('message', function (message: MessageEvent) {
       return;
     }
     if (handlerElem) {
-      const handler = new Handler(
-        handlerElem as HTMLElement,
-        message.data.uuid,
+      Handler.make(handlerElem as HTMLElement, message.data.uuid).then(
+        (handler) =>
+          handler.setup().then(() => {
+            handlers.push(handler);
+            handler.postReady();
+          }),
       );
-      handler.setup().then(() => {
-        handlers.push(handler);
-        handler.postReady();
-      });
     }
   } else {
     handlers.forEach((handler) => {

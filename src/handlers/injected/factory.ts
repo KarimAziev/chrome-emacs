@@ -1,18 +1,22 @@
 import { IInjectedHandler } from '@/handlers/injected/types';
 
-export type HandlerConstructor = new (
-  elem: HTMLElement,
-  uuid: string,
-) => IInjectedHandler;
+// Define an interface for classes with a static make method
+interface IHandlerWithMake {
+  make(elem: HTMLElement, uuid: string): Promise<IInjectedHandler>;
+}
+
+export type HandlerConstructor = {
+  new (elem: HTMLElement, uuid: string): IInjectedHandler;
+} & IHandlerWithMake;
 
 class InjectedHandlerFactory {
-  private handlers: Record<string, HandlerConstructor> = {};
+  private handlers: Record<string, IHandlerWithMake> = {};
 
-  registerHandler(name: string, klass: HandlerConstructor): void {
+  registerHandler(name: string, klass: IHandlerWithMake): void {
     this.handlers[name] = klass;
   }
 
-  getHandler(name: string): HandlerConstructor | undefined {
+  getHandler(name: string): IHandlerWithMake | undefined {
     return this.handlers[name];
   }
 }
