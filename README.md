@@ -19,17 +19,22 @@ Differences between the original and the forked package, as well as other simila
 
 ![Demo](./chrome-emacs.gif)
 
-Chrome Emacs is compatible with several widely-used online editors, including:
+Chrome Emacs is compatible with almost all online editors, including:
 
-- ☒ [codepen.io](https://codepen.io/)
-- ☒ [stackblitz.com](https://stackblitz.com/)
-- ☒ [jsfiddle.net](https://jsfiddle.net/)
-- ☒ [leetcode.com](https://leetcode.com/)
-- ☒ [hackerrank.com](https://www.hackerrank.com/)
-- ☒ [repl.it](https://repl.it/)
-- ☒ [glitch.com](https://glitch.com/)
-- ☒ [plnkr.co](https://plnkr.co/)
-- ☐ [codesandbox.io](https://codesandbox.io/) (Currently unsupported due to a lack of Monaco API exposure).
+- ☑ [codepen.io](https://codepen.io/)
+- ☑ [stackblitz.com](https://stackblitz.com/)
+- ☑ [jsfiddle.net](https://jsfiddle.net/)
+- ☑ [leetcode.com](https://leetcode.com/)
+- ☑ [hackerrank.com](https://www.hackerrank.com/)
+- ☑ [repl.it](https://repl.it/)
+- ☑ [glitch.com](https://glitch.com/)
+- ☑ [plnkr.co](https://plnkr.co/)
+- ☑ [coderpad.io](https://coderpad.io/)
+
+Experimental support is also available. See key considerations for users [here](https://github.com/KarimAziev/chrome-emacs/blob/main/docs/experimental-monaco-support.md):
+
+- ☑ [vscode.dev](https://vscode.dev/)
+- ☑ [codesandbox.io](https://codesandbox.io/)
 
 ### Installation
 
