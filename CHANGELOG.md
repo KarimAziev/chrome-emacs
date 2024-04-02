@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 0.3.1 (2024-04-03)
+
+- Fixed an issue on some sites, such as [replit.com](https://replit.com), where editing failed due to weird ID attribute values in DOM elements. Although IDs that start with a digit are valid in HTML, they require special escaping in CSS selectors.
+
 ## Version 0.3.0 (2024-04-02)
 
 - The main feature is the experimental support for `vscode.dev`, `codesandbox.io`, and other sites that do not globally expose the Monaco API. See [considerations](https://github.com/KarimAziev/chrome-emacs/blob/main/docs/experimental-monaco-support.md) here.
