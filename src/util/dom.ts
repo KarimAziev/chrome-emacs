@@ -3,7 +3,8 @@ export function getCssSelector(el: Element): string | undefined {
   while (el.nodeType === Node.ELEMENT_NODE) {
     let selector: string = el.nodeName.toLowerCase();
     if (el.id) {
-      selector += '#' + el.id;
+      const escapedId = el.id.replace(/^(\d)/, '\\3$1 ').replace(/:/g, '\\:');
+      selector += '#' + escapedId;
       path.unshift(selector);
       break;
     } else {
