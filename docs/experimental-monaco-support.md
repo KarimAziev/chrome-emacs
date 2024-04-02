@@ -6,9 +6,9 @@ This document outlines the support for experimental Monaco-like editor integrati
 
 For web-based editors utilizing the Monaco Editor without direct API access the extension employs a sophisticated method of simulating user actions. This includes typing, navigation through keyboard event simulation, and direct DOM manipulation. This approach contrasts with our standard method for editors where the Monaco API is exposed, enabling more direct interaction.
 
-### Notable Features
+### Features and Limitations
 
-All real-time editing features, including scroll and selection synchronization from Emacs to the browser, are fully supported. The only unsupported feature is pushing changes from the browser to Emacs, but this is not a significant issue.
+All real-time editing features, including scroll and selection synchronization from Emacs to the browser, are fully supported. The only unsupported feature is pushing changes from the browser to Emacs, but this is not a significant issue. Also, there may be some delay in retrieving the initial value, depending on the number of pages, as we need to iterate through every page to capture the full content.
 
 ### Key Challenges
 
@@ -50,12 +50,6 @@ The following browser shortcuts must not be modified by the user to ensure prope
 ## Why is Retrieving Value Complex?
 
 Retrieving text content from Monaco-like editors is particularly challenging due to virtualization. These editors only render visible lines in the DOM to improve performance, requiring a page-by-page extraction process to obtain the full content. This method involves scrolling through the editor, ensuring each page's content is visible, then extracting and compiling the text.
-
-### Limitations
-
-Given the complexity of virtualization, the extension is optimized for pushing updates from Emacs to the browser.
-
-However, all other real-time editing features, including scroll and selection synchronization, are fully supported.
 
 ## Conclusion
 
