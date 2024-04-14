@@ -1,0 +1,169 @@
+html,
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+}
+
+main {
+  box-sizing: border-box;
+  height: 100%;
+  width: 100%;
+}
+
+#optionsForm {
+  height: 95%;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+
+  fieldset.dynamic-fields {
+    flex: auto;
+
+    .rows {
+      height: 18.75rem;
+      overflow: auto;
+    }
+  }
+
+  fieldset {
+    button.remove {
+      cursor: pointer;
+      color: #e91e63;
+      transition: all ease-in 0.3;
+      background-color: transparent;
+      border: none;
+      &:hover {
+        color: #4a4a4a;
+      }
+      &:disabled {
+        opacity: 0.6;
+        color: #4a4a60;
+        cursor: not-allowed;
+        &:hover {
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+  .form-row {
+    display: flex;
+    justify-content: flex-start;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+    padding: 0.1rem 0;
+  }
+}
+select,
+input[type='text'] {
+  &:disabled {
+    cursor: not-allowed;
+    &:hover {
+      cursor: not-allowed;
+    }
+  }
+}
+
+select,
+input[type='text'],
+button {
+  padding: 0.5rem;
+}
+
+select {
+  background-color: transparent;
+  option {
+    min-height: 1rem;
+  }
+}
+
+button {
+  cursor: pointer;
+  border-radius: 0.25rem;
+  padding: 0.5rem 1.25rem;
+  text-decoration: none;
+  display: inline-block;
+  font-weight: 600;
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+button.secondary {
+  background-color: transparent;
+  border: 0.125rem solid #e32d67;
+  color: #e32d67;
+  &:hover,
+  &:focus {
+    box-shadow:
+      0 0.5rem 1rem 0 rgba(0, 0, 0, 0.2),
+      0 0.375rem 1.25rem 0 rgba(0, 0, 0, 0.19);
+  }
+}
+
+button.primary {
+  transition-duration: 0.2s;
+  border-radius: 0.25rem;
+  background-color: #e32d67;
+  border: 0.125rem solid rgba(0, 0, 0, 0.2);
+  color: white;
+  padding: 0.5rem 1.25rem;
+
+  text-decoration: none;
+  display: inline-block;
+  font-weight: 600;
+  &:hover,
+  &:focus {
+    box-shadow:
+      0 0.5rem 1rem 0 rgba(0, 0, 0, 0.2),
+      0 0.375rem 1.25rem 0 rgba(0, 0, 0, 0.19);
+  }
+}
+
+.add-save-buttons {
+  padding: 0.5rem;
+  button:not(:first-child) {
+    margin-left: 0.5rem;
+  }
+}
+
+input.invalid {
+  outline: 2px solid red;
+  &:focus {
+    background-color: rgb(253, 237, 237);
+  }
+}
+
+.modal {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  header {
+    text-align: center;
+    padding: 0.5rem;
+  }
+  .content {
+    padding: 0.5rem;
+    display: flex;
+    text-align: center;
+    align-items: center;
+    min-height: 6.25rem;
+    justify-content: space-around;
+    flex-direction: column;
+  }
+
+  footer {
+    margin-top: 0.3125rem;
+
+    button:not(:first-child) {
+      margin-left: 0.3125rem;
+    }
+  }
+}
+
+.error {
+  color: #e91e63;
+  min-height: 1.25rem;
+}
