@@ -2,6 +2,7 @@
 
 const path = require('path');
 const webpack = require('webpack');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 /**
  * @param {object} env
@@ -17,6 +18,7 @@ module.exports = (_env, argv) => {
       'content-script': ['./src/content-script.ts'],
       'query-edit': ['./src/query-edit.ts'],
       injected: ['./src/injected.ts'],
+      options: ['./src/options/options.ts'],
     },
     output: {
       filename: '[name].js',
@@ -44,6 +46,10 @@ module.exports = (_env, argv) => {
             replace: 'dummy-codemirror',
           },
         },
+        {
+          test: /\.scss$/,
+          use: ['style-loader', 'css-loader', 'sass-loader'],
+        },
       ],
     },
     resolve: {
@@ -53,11 +59,16 @@ module.exports = (_env, argv) => {
         'dummy-codemirror': path.join(__dirname, 'src', 'shims', 'codemirror'),
       },
     },
-
     externals: {
       chrome: 'chrome',
     },
     plugins: [
+      new HtmlWebpackPlugin({
+        filename: '../options.html',
+        minify: false,
+        template: 'src/options/options.html',
+        chunks: ['options'],
+      }),
       new webpack.ProvidePlugin({
         // Make a global `process` variable that points to the `process` package,
         // because the `util` package expects there to be a global variable named `process`.
