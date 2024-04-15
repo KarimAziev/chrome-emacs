@@ -12,6 +12,7 @@ const KEEP_ALIVE_INTERVAL = 10 * 1000;
 class WSBridge {
   private webSocket: WebSocket | null = null;
   private keepAliveIntervalId: NodeJS.Timeout | null = null;
+  private tabId?: number;
 
   /**
    * Opens a WebSocket connection and sets up message handlers.
@@ -19,8 +20,10 @@ class WSBridge {
    */
   openConnection(port: chrome.runtime.Port): void {
     const queue: string[] = [];
+    this.tabId = port.sender?.tab?.id;
+
     const ws: WebSocket = this.makeWS(port, queue);
-    port.onMessage.addListener((msg: any) => this.sendMessage(ws, queue, msg));
+    port.onMessage.addListener((msg) => this.sendMessage(ws, queue, msg));
 
     port.onDisconnect.addListener(() => {
       ws.close(1000);
@@ -38,7 +41,7 @@ class WSBridge {
     this.webSocket = ws;
 
     ws.onopen = () => {
-      chrome.action.setIcon({ path: '../images/icon-19.png' });
+      this.updateIcon(true);
       this.startKeepAliveLoop();
       while (queue.length > 0) {
         ws.send(queue.shift() as string);
@@ -52,8 +55,7 @@ class WSBridge {
 
     ws.onclose = (evt: CloseEvent) => {
       this.stopKeepAlive();
-      chrome.action.setIcon({ path: '../images/icon-19-inactive.png' });
-
+      this.updateIcon(false);
       const payload: ClosedMessagePayload = {
         code: evt.code,
         reason: evt.reason,
@@ -64,11 +66,19 @@ class WSBridge {
         type: 'closed',
         payload,
       });
+
       port.disconnect();
       this.webSocket = null;
     };
 
     return ws;
+  }
+
+  private updateIcon(active: boolean) {
+    const path = active
+      ? '../images/icon-19.png'
+      : '../images/icon-19-inactive.png';
+    chrome.action.setIcon({ path, tabId: this.tabId });
   }
 
   /**
