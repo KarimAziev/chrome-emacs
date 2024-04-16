@@ -35,15 +35,9 @@ export function splitPreservingConsecutiveSeparators(
   str: string,
   separators: string[],
 ): string[] {
-  const dict = separators.reduce(
-    (acc, key) => {
-      acc[key] = true;
-      return acc;
-    },
-    {} as { [key: string]: boolean },
-  );
+  const dictSet = new Set<string>(separators);
 
-  if (dict[str]) {
+  if (dictSet.has(str)) {
     return [str];
   }
 
@@ -53,7 +47,11 @@ export function splitPreservingConsecutiveSeparators(
   let i = 0;
 
   while (i < str.length) {
-    if (dict[str[i]] && i + 1 < str.length && str[i + 1] === str[i]) {
+    const char = str[i];
+    const nextChar = i + 1 < str.length && str[i + 1];
+    const isSeparator = dictSet.has(char);
+
+    if (isSeparator && nextChar === char) {
       if (buffer.length > 0) {
         result.push(buffer);
         buffer = '';
@@ -61,7 +59,7 @@ export function splitPreservingConsecutiveSeparators(
       result.push(str[i]);
 
       i += 2;
-    } else if (!dict[str[i]]) {
+    } else if (!isSeparator) {
       buffer += str[i++];
     } else {
       if (buffer.length > 0) {
