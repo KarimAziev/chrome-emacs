@@ -1,7 +1,7 @@
 import { isString } from '@/util/guard';
 
 export const capitalize = <T>(s: T) =>
-  isString(s) ? s[0].toUpperCase() + s.slice(1) : s;
+  s === '' ? s : isString(s) ? s[0].toUpperCase() + s.slice(1) : s;
 
 export const htmlEscape = <T>(s: T) =>
   isString(s)
@@ -79,79 +79,9 @@ export function splitPreservingConsecutiveSeparators(
 
 export const splitKeySequence = (str: string): string[] =>
   splitPreservingConsecutiveSeparators(
-    str.replace(/(^|\s|-)(space|spc)(?=$|\s|-)/gi, '$1 '),
+    str
+      .replace(/(^|\s|-)(space|spc)(?=$)/gi, ' space ')
+      .replace(/(^)(space|spc)(?=$|\s|-)/gi, ' space')
+      .replace(/(^|\s|-)(space|spc)(?=$|\s|-)/gi, '$1 '),
     ['-', ' '],
   );
-
-/**
- * const isArrEq = (arrA: any[], arrB: any[]) =>
- *   arrA &&
- *   arrB &&
- *   Array.isArray(arrA) &&
- *   Array.isArray(arrB) &&
- *   arrA.length === arrB.length &&
- *   arrA.every((v, i) => v === arrB[i]);
- */
-
-/**
- * const inputsWithExpectedResults = [
- *   {
- *     input: 'Ctrl-x f r',
- *     shouldBe: ['Ctrl', 'x', 'f', 'r'],
- *   },
- *   {
- *     input: 'Ctrl-x   r',
- *     shouldBe: ['Ctrl', 'x', ' ', 'r'],
- *   },
- *   {
- *     input: 'Ctrl-x  ',
- *     shouldBe: ['Ctrl', 'x', ' '],
- *   },
- *   {
- *     input: 'Ctrl--   r',
- *     shouldBe: ['Ctrl', '-', ' ', 'r'],
- *   },
- *   {
- *     input: 'Ctrl-Alt--   r',
- *     shouldBe: ['Ctrl', 'Alt', '-', ' ', 'r'],
- *   },
- *   {
- *     input: 'space',
- *     shouldBe: [' '],
- *   },
- *   {
- *     input: 'spc',
- *     shouldBe: [' '],
- *   },
- *   {
- *     input: 'SPC',
- *     shouldBe: [' '],
- *   },
- *   {
- *     input: 'Space',
- *     shouldBe: [' '],
- *   },
- *   {
- *     input: ' ',
- *     shouldBe: [' '],
- *   },
- *   {
- *     input: 'Ctrl-x Space',
- *     shouldBe: ['Ctrl', 'x', ' '],
- *   },
- * ];
- *
- *
- * inputsWithExpectedResults.forEach(({ input, shouldBe }) => {
- *   const result = splitKeySequence(input);
- *   if (!isArrEq(result, shouldBe)) {
- *     const str = `escapeAwareSplit(${JSON.stringify(input, null, 2)})
- * result=${JSON.stringify(result, null, 2)}
- * should be=${JSON.stringify(shouldBe, null, 2)}
- *
- * ____________________________________
- * `;
- *     console.log(str);
- *   }
- * });
- */
