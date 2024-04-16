@@ -24,7 +24,8 @@
       "codemirror",
       "node",
       "events",
-      "uuid"
+      "uuid",
+      "jest"
     ],
     "baseUrl": ".",
     "paths": {
@@ -32,5 +33,5 @@
       "dummy-codemirror": ["src/shims/codemirror.js"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "__tests__"]
 }

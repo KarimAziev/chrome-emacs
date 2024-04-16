@@ -14,12 +14,15 @@
     "@types/chrome": "^0.0.258",
     "@types/codemirror": "^5.60.15",
     "@types/events": "^3.0.3",
+    "@types/jest": "^29.5.12",
     "@types/node": "^20.11.24",
     "@types/uuid": "^9.0.7",
     "@types/webpack": "^5.28.5",
     "babel-loader": "^8.2.2",
     "css-loader": "^7.0.0",
     "html-webpack-plugin": "^5.6.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
     "monaco-editor": "^0.45.0",
     "prettier": "^3.2.5",
     "rimraf": "^5.0.5",
@@ -27,7 +30,9 @@
     "sass-loader": "^14.1.1",
     "string-replace-loader": "3.0.3",
     "style-loader": "^3.3.4",
+    "ts-jest": "^29.1.2",
     "ts-loader": "^9.5.1",
+    "ts-node": "^10.9.2",
     "typescript": "^5.3.3",
     "webpack": "^5.52.1",
     "webpack-cli": "^4.8.0"
@@ -38,7 +43,10 @@
     "prebuild": "npm run clean",
     "prepublish": "npm run build",
     "build": "webpack --mode production",
-    "dev": "webpack --watch"
+    "dev": "webpack --watch",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "codemirror": "^5.11.0",
