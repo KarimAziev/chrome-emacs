@@ -1,3 +1,5 @@
+# About
+
 <div align="center">
 
 ![](./app/images/icon.png)
@@ -36,17 +38,30 @@ Experimental support is also available. See key considerations for users [here](
 - ☑ [vscode.dev](https://vscode.dev/)
 - ☑ [codesandbox.io](https://codesandbox.io/)
 
-### Installation
+# Table of Contents <-- :TOC: -->
 
-#### Chrome Extension
+- [About](#about)
+- [Installation](#installation)
+  - [Chrome Extension](#chrome-extension)
+  - [Emacs Integration](#emacs-integration)
+- [Usage](#usage)
+- [Customization](#customization)
+  - [How to Bind Shortcuts](#how-to-bind-shortcuts)
+  - [Extension Options](#extension-options)
+- [Development](#development)
+
+# Installation
+
+## Chrome Extension
 
 Install the [Chrome extension](https://chromewebstore.google.com/detail/chrome-emacs/dabdpcafiblbndpoadckibiaojbdnpjg).
 
-#### Emacs Integration
+## Emacs Integration
 
-Install the corresponding Emacs package from <a target="_blank" href="https://github.com/KarimAziev/atomic-chrome">this fork</a> (recommended), or original <a href="https://github.com/alpha22jp/atomic-chrome" target="_blank">atomic-chrome</a> package.
+Install the corresponding Emacs package from <a target="_blank" href="https://github.com/KarimAziev/atomic-chrome">this fork</a> (recommended for cursor and scroll synchronization, file handling, automatic major mode detection, and handling large content, etc.), or the original <a href="https://github.com/alpha22jp/atomic-chrome" target="_blank">atomic-chrome</a> package for basic functionality only.
 
-Differences between them are that:
+<details><summary> Detailed Differences Between the Original Package and Its Fork
+  </summary>
 
 - **Handling large payloads:** Unlike the original package, which may not handle incomplete frames, this fork is equipped to manage large payloads efficiently.
 - **Cursor and scroll synchronization:** Inspired by the need for a more fluid live-coding experience during online interviews, the [chrome-emacs](https://github.com/KarimAziev/chrome-emacs) extension and this fork focus on editing text areas and providing seamless cursor and scroll synchronization in online editors.
@@ -54,10 +69,12 @@ Differences between them are that:
 - **Dynamic major modes:** Recognizing the diversity of programming languages within many online editors, this fork surpasses the original package's limitation of one major mode per website. It dynamically sets major modes based on file extensions extracted from the editor instance, resulting in a more responsive and tailored editing experience.
 - **Enhanced frame configuration:** Beyond the original package's limited customization of frame width and height, this fork extends customization to every frame configuration parameter. It also automatically calculates `left` and `top` positions for the frame when the Atomic Chrome client provides a `rect` with pixel dimensions and positions, offering a more adaptable and sophisticated user interface.
 
+</details>
+
 <details><summary> Show installation instructions
   </summary>
 
-##### With use-package and straight.el
+### With use-package and straight.el
 
 ```emacs-lisp
 (use-package atomic-chrome
@@ -72,7 +89,7 @@ Differences between them are that:
   (atomic-chrome-start-server))
 ```
 
-##### Manual Installation
+### Manual Installation
 
 Download the source code and place it in your desired directory (e.g., `~/.emacs.d/atomic-chrome/`):
 
@@ -87,13 +104,7 @@ Add the downloaded directory to the load path and require it:
 (require 'atomic-chrome)
 ```
 
-##### Configure
-
-```emacs-lisp
-(setq-default atomic-chrome-extension-type-list '(atomic-chrome))
-```
-
-##### Run server
+### Run server
 
 ```emacs-lisp
 (atomic-chrome-start-server)
@@ -131,7 +142,7 @@ Add the downloaded directory to the load path and require it:
 
 </details>
 
-### Usage
+# Usage
 
 https://github.com/KarimAziev/atomic-chrome/assets/24935940/e1f6875c-d917-4a8b-ad58-35d55eeb5cbb
 
@@ -141,26 +152,56 @@ Ensure that Emacs is running with the [atomic-chrome fork](https://github.com/Ka
 
 2. Focus on or select from detected editable text areas, text editors, or contenteditable elements in Chrome.
 
-![Hints](./hints.png)
+![Hints](./images/hints.png)
 
 3. Activate Chrome Emacs. This can typically be done by clicking on the extension's icon or using a keyboard shortcut.
 
 The text will now open in an Emacs buffer, ready for you to edit.
 
-#### How to Bind a Shortcut?
+# Customization
 
-![Shortcuts](./shortcuts.png)
+## How to Bind Shortcuts
+
+![Shortcuts](./images/shortcuts.png)
 
 1. Navigate to `chrome://extensions`.
 2. Scroll down and click on `Keyboard shortcuts` at the bottom of the page.
-3. Assign a shortcut for activating Chrome Emacs. There are two available commands:
+3. Assign shortcuts for the available commands:
 
-- **Activate the extension** - default action, edit focused area. If there are no focused are, try to detect them from visible part of the page.
-- **Select and edit element** - Show key to press near editable elements to focus and start editing. To cancel, press either `ESC` or `Ctrl-g`.
+- **Activate the extension** - This is the default action to edit the focused area. If there are no focused areas, it tries to detect them from the visible part of the page.
+- **Select and edit an element** - Shows the key to press near editable elements to focus and start editing. To cancel, press either `ESC` or `Ctrl-g` (these keybindings may be changed, as well as the characters used in hints; [see Extension Options](#extension-options)).
 
-#### Development
+## Extension Options
 
-<details><summary>Local setup </summary>
+In the options, you can configure which letters to use for hints and exit keybindings.
+
+![Options](./images/options.gif)
+
+There are several ways to open the extension's options:
+
+### From the Toolbar with a Pinned Icon
+
+If you have pinned the Chrome Emacs icon on the toolbar, right-click on the icon and then click on "Options".
+
+![Pinned](./images/pinned-options.png)
+
+### From the Toolbar without a Pinned Icon
+
+Another quick way is to click the "Extensions" button on the toolbar. This is the icon that looks like a small puzzle piece next to the profile avatar. In the dropdown, find Chrome Emacs, and click the settings icon, which looks like a "vertical ellipsis". Then click on "Options".
+
+![Toolbar](./images/toolbar-options.png)
+
+### From the Chrome Extensions URL
+
+Alternatively, navigate to `chrome://extensions`, find Chrome Emacs, click on "Details", and then click on "Extension options".
+
+![Details](./images/options-in-details.png)
+
+In the options popup, after making changes, remember to click on the "Save" button.
+
+# Development
+
+<details><summary>Local Setup </summary>
 
 1. Clone the repository to your local machine:
    ```
