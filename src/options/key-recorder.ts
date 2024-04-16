@@ -1,12 +1,12 @@
-import { KeyboardMapper } from '@/util/keyboard-mapper';
-import { KeySequenceReader } from '@/util/key-reader';
-import { isString } from '@/util/guard';
 import { createElem } from '@/options/util';
+import { isString } from '@/util/guard';
+import { KeyboardMapper } from '@/util/keyboard-mapper';
+import { formatKeyboardEvents, validateKeyString } from '@/util/keyboard-util';
 
 export interface RecorderProps {
-  validate?: (keytext: string) => string | undefined | boolean;
   onSubmit?: (keytext: string) => void;
   onCancel?: () => void;
+  validate?: (keytext: string) => string | undefined | boolean;
 }
 
 export class KeyRecorder {
@@ -151,45 +151,35 @@ export class KeyRecorder {
     if (['Backspace'].includes(key)) {
       if (this.keyEvents.length > 0) {
         this.keyEvents.pop();
-        this.keyInput.value = KeySequenceReader.formatKeyboardEvents(
-          this.keyEvents,
-        );
+        this.keyInput.value = formatKeyboardEvents(this.keyEvents);
         this.resetButton.disabled = this.keyEvents.length === 0;
         this.submitButton.disabled = this.keyEvents.length === 0;
-        if (!this.isValidKey(this.keyInput.value)) {
-          this.resetRecording();
-        }
+        this.validateInput();
         return;
       }
     }
 
     this.keyEvents.push(ev);
-    this.keyInput.value = KeySequenceReader.formatKeyboardEvents(
-      this.keyEvents,
-    );
-    if (!this.isValidKey(this.keyInput.value)) {
-      this.resetRecording();
-    }
+    this.keyInput.value = formatKeyboardEvents(this.keyEvents);
+    this.validateInput();
   }
 
-  private isValidKey(value: string) {
-    const isInvalid: string | boolean | undefined =
-      (!KeySequenceReader.validateKeyString(value) && 'Invalid key') ||
-      (this.validate && this.validate(value));
-
-    if (isInvalid) {
-      this.errorSpan.innerText = isString(isInvalid)
-        ? isInvalid
-        : 'Invalid key';
-      this.submitButton.disabled = true;
-      this.resetButton.disabled = this.keyEvents.length === 0;
+  private validateInput() {
+    if (!validateKeyString(this.keyInput.value)) {
+      this.errorSpan.innerText = 'Invalid key';
+      this.resetRecording();
       return false;
     }
+    const errorMsg = this.validate && this.validate(this.keyInput.value);
+    this.errorSpan.innerText = isString(errorMsg)
+      ? errorMsg
+      : errorMsg
+        ? 'Invalid'
+        : '';
 
-    this.errorSpan.innerText = '';
-    this.submitButton.disabled = this.keyEvents.length === 0;
+    this.submitButton.disabled = !!errorMsg;
     this.resetButton.disabled = this.keyEvents.length === 0;
-    return this.keyEvents.length > 0;
+    return !errorMsg;
   }
 
   private resetRecording(clickInitiated = false) {
@@ -203,12 +193,11 @@ export class KeyRecorder {
   }
 
   private submit() {
-    const val = KeySequenceReader.formatKeyboardEvents(this.keyEvents);
-    const valid = this.isValidKey(val);
+    const valid = this.validateInput();
 
     if (valid) {
       if (this.onSubmit) {
-        this.onSubmit(val);
+        this.onSubmit(this.keyInput.value);
       }
       this.onCancel = null;
       this.closeDialog();

@@ -1,5 +1,5 @@
 import { addStyle } from '@/util/dom';
-import { KeySequenceReader } from '@/util/key-reader';
+import { KeyReader } from '@/util/key-reader';
 
 const HINT_ATTRIBUTE_NAME = 'data-chrome-emacs-hint';
 
@@ -30,7 +30,7 @@ class HintReader<Value> {
   private hints: [HintElem, HintItem<Value>][] = [];
   private observers: IntersectionObserver[] = [];
   private resizeObservers: ResizeObserver[] = [];
-  private reader: KeySequenceReader;
+  private reader: KeyReader;
 
   private characters = 'ASDFGQWERTZXCVB';
   private exitKeybingings = ['Ctrl-g', 'Escape'];
@@ -283,7 +283,7 @@ class HintReader<Value> {
 
         window.addEventListener('resize', this.updateHintPositions);
 
-        this.reader = new KeySequenceReader({
+        this.reader = new KeyReader({
           keybindings: [...hintChars, ...this.exitKeybingings],
           onDone,
           preventDefaults: true,

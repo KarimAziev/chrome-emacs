@@ -1,21 +1,17 @@
 import { KeyboardMapper } from '@/util/keyboard-mapper';
-import { splitKeySequence } from '@/util/string';
-
-export interface KeySequenceItem {
-  key: string;
-  ctrlKey: boolean;
-  shiftKey: boolean;
-  metaKey: boolean;
-  altKey: boolean;
-}
+import {
+  parseKeySequence,
+  formatKeyEventItem,
+  KeyEventItem,
+} from '@/util/keyboard-util';
 
 interface KeySequenceNode {
   children: Map<string, KeySequenceNode>;
-  sequenceItem?: KeySequenceItem;
+  sequenceItem?: KeyEventItem;
   action?: () => void;
 }
 
-export interface KeySequenceReaderParams {
+export interface KeyReaderParams {
   onDone: (value: string) => void;
   onPartialDone?: (value: string) => void;
   onMismatch?: () => void;
@@ -23,13 +19,13 @@ export interface KeySequenceReaderParams {
   preventDefaults?: boolean;
 }
 
-export class KeySequenceReader {
+export class KeyReader {
   private root: KeySequenceNode;
   private currentNode: KeySequenceNode;
   private currentValue: string | null;
   private preventDefaults: boolean = false;
-  private onPartialDone: KeySequenceReaderParams['onPartialDone'];
-  private onMismatch: KeySequenceReaderParams['onMismatch'];
+  private onPartialDone: KeyReaderParams['onPartialDone'];
+  private onMismatch: KeyReaderParams['onMismatch'];
 
   constructor({
     keybindings,
@@ -37,10 +33,10 @@ export class KeySequenceReader {
     preventDefaults,
     onPartialDone,
     onMismatch,
-  }: KeySequenceReaderParams) {
+  }: KeyReaderParams) {
     const keyConfigs = keybindings.map((v) => ({
       action: () => onDone(v),
-      sequence: KeySequenceReader.parseKeySequence(v),
+      sequence: parseKeySequence(v),
     }));
 
     this.preventDefaults = preventDefaults || false;
@@ -50,11 +46,11 @@ export class KeySequenceReader {
     this.currentNode = this.root;
   }
 
-  private stringifyKeySequence(obj: KeySequenceItem) {
+  private stringifyKeySequence(obj: KeyEventItem) {
     const data = Object.keys(obj)
       .sort()
       .reduce(
-        (result, key: keyof KeySequenceItem) => {
+        (result, key: keyof KeyEventItem) => {
           result[key] = obj[key];
           return result;
         },
@@ -63,89 +59,8 @@ export class KeySequenceReader {
     return JSON.stringify(data);
   }
 
-  static formatKeySequenceItem(curr: KeySequenceItem, separator = '-') {
-    const isUpcased = curr.key.length === 1 && /^[A-Z]$/.test(curr.key);
-
-    const labels = {
-      ctrlKey: 'Ctrl',
-      metaKey: 'Meta',
-      altKey: 'Alt',
-      shiftKey: isUpcased ? null : 'Shift',
-    };
-
-    const metaKeys = Object.entries(labels).flatMap(
-      ([prop, val]: [keyof typeof labels, string | null]) =>
-        curr[prop] && val ? [val] : [],
-    );
-
-    const label = metaKeys
-      .concat([curr.key === ' ' ? 'Space' : curr.key])
-      .join(separator);
-    return label;
-  }
-
-  static formatKeyboardEvents(keyEvents: KeySequenceItem[], separator = '-') {
-    return keyEvents
-      .reduce((acc, curr) => {
-        const label = KeySequenceReader.formatKeySequenceItem(curr, separator);
-        acc.push(label);
-        return acc;
-      }, [] as string[])
-      .join(' ');
-  }
-
-  static validateKeyString(keystr: string) {
-    const evs = KeySequenceReader.parseKeySequence(keystr);
-
-    const lastKey = evs.pop();
-
-    return !!lastKey?.key;
-  }
-
-  static parseKeySequence(sequence: string): KeySequenceItem[] {
-    const chars = splitKeySequence(sequence).reverse();
-
-    const result: KeySequenceItem[] = [];
-    let curr: string;
-    let lastMods: ('ctrl' | 'shift' | 'meta' | 'alt')[] = [];
-    while (chars.length > 0) {
-      curr = chars.pop() as string;
-      if (KeyboardMapper.isModifier(curr)) {
-        const alias = KeyboardMapper.isCtrlKey(curr)
-          ? 'ctrl'
-          : KeyboardMapper.isShiftKey(curr)
-            ? 'shift'
-            : KeyboardMapper.isMetaKey(curr)
-              ? 'meta'
-              : KeyboardMapper.isAltKey(curr)
-                ? 'alt'
-                : null;
-        if (!alias || lastMods.includes(alias)) {
-          return [];
-        } else {
-          lastMods.push(alias);
-        }
-      } else {
-        const evData = {
-          key: curr,
-          ctrlKey: lastMods.includes('ctrl'),
-          metaKey: lastMods.includes('meta'),
-          altKey: lastMods.includes('alt'),
-          shiftKey:
-            lastMods.includes('shift') ||
-            (curr.length === 1 && /^[A-Z]$/.test(curr)),
-        };
-
-        lastMods = [];
-        result.push(evData);
-      }
-    }
-
-    return result;
-  }
-
   private initializeKeySequences(
-    sequences: { sequence: KeySequenceItem[]; action: () => void }[],
+    sequences: { sequence: KeyEventItem[]; action: () => void }[],
   ): KeySequenceNode {
     const root: KeySequenceNode = { children: new Map() };
     sequences.forEach(({ sequence, action }) => {
@@ -183,7 +98,7 @@ export class KeySequenceReader {
       return;
     }
 
-    const currentKeyData: KeySequenceItem = {
+    const currentKeyData: KeyEventItem = {
       ctrlKey: event.ctrlKey,
       key: event.key,
       shiftKey: event.shiftKey,
@@ -197,7 +112,7 @@ export class KeySequenceReader {
     if (nextNode) {
       this.currentValue = [
         this.currentValue,
-        KeySequenceReader.formatKeySequenceItem(currentKeyData),
+        formatKeyEventItem(currentKeyData),
       ]
         .filter((v) => !!v)
         .join(' ');

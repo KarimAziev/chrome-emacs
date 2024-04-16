@@ -31,57 +31,46 @@ export function generateStringHash(text: string): number {
   return hash;
 }
 
-export function splitPreservingConsecutiveSeparators(
-  str: string,
-  separators: string[],
-): string[] {
-  const dictSet = new Set<string>(separators);
+export function groupByCommonPrefix(arr: string[]): Record<string, string[]> {
+  const result: Record<string, string[]> = {};
 
-  if (dictSet.has(str)) {
-    return [str];
-  }
-
-  let result: string[] = [];
-
-  let buffer = '';
-  let i = 0;
-
-  while (i < str.length) {
-    const char = str[i];
-    const nextChar = i + 1 < str.length && str[i + 1];
-    const isSeparator = dictSet.has(char);
-
-    if (isSeparator && nextChar === char) {
-      if (buffer.length > 0) {
-        result.push(buffer);
-        buffer = '';
+  arr.forEach((str) => {
+    let found = false;
+    for (const prefix in result) {
+      if (str.startsWith(prefix)) {
+        result[prefix].push(str);
+        found = true;
+        break;
       }
-      result.push(str[i]);
-
-      i += 2;
-    } else if (!isSeparator) {
-      buffer += str[i++];
-    } else {
-      if (buffer.length > 0) {
-        result.push(buffer);
-        buffer = '';
-      }
-      i++;
     }
-  }
 
-  if (buffer.length > 0) {
-    result.push(buffer);
-  }
+    if (!found) {
+      for (let i = 1; i < str.length; i++) {
+        const potentialPrefix = str.substring(0, i);
+        const matchedStrings = arr.filter(
+          (s) => s.startsWith(potentialPrefix) && s !== str,
+        );
+
+        if (matchedStrings.length > 0) {
+          result[potentialPrefix] = [str, ...matchedStrings];
+
+          matchedStrings.forEach((s) => {
+            const indexToRemove = arr.indexOf(s);
+            if (indexToRemove > -1) arr.splice(indexToRemove, 1);
+          });
+          break;
+        }
+      }
+    }
+  });
+
+  Object.keys(result).forEach((key) => {
+    if (result[key].length <= 1) {
+      delete result[key];
+    } else {
+      result[key] = Array.from(new Set(result[key]));
+    }
+  });
 
   return result;
 }
-
-export const splitKeySequence = (str: string): string[] =>
-  splitPreservingConsecutiveSeparators(
-    str
-      .replace(/(^|\s|-)(space|spc)(?=$)/gi, ' space ')
-      .replace(/(^)(space|spc)(?=$|\s|-)/gi, ' space')
-      .replace(/(^|\s|-)(space|spc)(?=$|\s|-)/gi, '$1 '),
-    ['-', ' '],
-  );

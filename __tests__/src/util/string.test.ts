@@ -1,8 +1,6 @@
 import {
-  splitKeySequence,
   isValueMatches,
   replaceNonBreakingSpaces,
-  splitPreservingConsecutiveSeparators,
   capitalize,
   htmlEscape,
   generateStringHash,
@@ -145,52 +143,5 @@ describe('replaceNonBreakingSpaces', () => {
   it('should return the input as is for non-string values', () => {
     const input = 12345;
     expect(replaceNonBreakingSpaces(input)).toEqual(input);
-  });
-});
-
-describe('splitKeySequence', () => {
-  test.each([
-    ['Ctrl-x f r', ['Ctrl', 'x', 'f', 'r']],
-    ['Ctrl-x   r', ['Ctrl', 'x', ' ', 'r']],
-    ['Ctrl-x  ', ['Ctrl', 'x', ' ']],
-    ['Ctrl--   r', ['Ctrl', '-', ' ', 'r']],
-    ['Ctrl-Alt--   r', ['Ctrl', 'Alt', '-', ' ', 'r']],
-    ['', []],
-    ['q', ['q']],
-    ['Ctrl-g', ['Ctrl', 'g']],
-    ['Escape', ['Escape']],
-    ['Q', ['Q']],
-    ['Ctrl-x Space', ['Ctrl', 'x', ' ']],
-    ['Ctrl-Space', ['Ctrl', ' ']],
-    ['space', [' ']],
-    ['spc', [' ']],
-    ['SPC', [' ']],
-    ['Space', [' ']],
-    [' ', [' ']],
-    ['Space Space', [' ', ' ']],
-  ])('splitKeySequence("%s") => %s', (str, expected) => {
-    expect(splitKeySequence(str)).toEqual(expected);
-  });
-});
-
-describe('splitPreservingConsecutiveSeparators', () => {
-  test.each([
-    ['Ctrl-x f r', ['Ctrl', 'x', 'f', 'r']],
-    ['Ctrl-x   r', ['Ctrl', 'x', ' ', 'r']],
-    ['Ctrl-x  ', ['Ctrl', 'x', ' ']],
-    ['Ctrl--   r', ['Ctrl', '-', ' ', 'r']],
-    ['Ctrl-Alt--   r', ['Ctrl', 'Alt', '-', ' ', 'r']],
-    ['', []],
-    ['q', ['q']],
-    ['Ctrl-g', ['Ctrl', 'g']],
-    ['Escape', ['Escape']],
-    ['Q', ['Q']],
-    ['Ctrl-x  ', ['Ctrl', 'x', ' ']],
-    ['Ctrl-x ', ['Ctrl', 'x']],
-    [' ', [' ']],
-  ])('splitPreservingConsecutiveSeparators("%s") => %s', (str, expected) => {
-    expect(splitPreservingConsecutiveSeparators(str, ['-', ' '])).toEqual(
-      expected,
-    );
   });
 });

@@ -1,7 +1,8 @@
 import { KeyRecorder } from '@/options/key-recorder';
 import { createElem } from '@/options/util';
-import { splitKeySequence } from '@/util/string';
+import { splitKeySequence } from '@/util/keyboard-util';
 import './options.scss';
+import { groupByCommonPrefix } from '@/util/string';
 
 export interface Option {
   label: string;
@@ -120,11 +121,11 @@ export class DynamicForm {
       seen.add(el);
     }
 
-    const dubs = Array.from(dubSet).map((c) => `Dublicated char '${c}'`);
+    const dubs = Array.from(dubSet).map((c) => `Duplicated char '${c}'`);
 
     const invalidMessages =
       chars.length <= 1
-        ? ['Minimal length is 2 chars']
+        ? ['Minimum length is 2 characters']
         : dubs.concat(
             chars.flatMap((c) => {
               const pair = this.fields?.find(
@@ -137,7 +138,7 @@ export class DynamicForm {
                 ? [
                     c === keybinding
                       ? `${c} is used in command ${keybindingCmd}`
-                      : `${c} is used in command ${keybindingCmd} keybinding ${keybinding}`,
+                      : `${c} is used in the '${keybindingCmd}' command's keybinding '${keybinding}'`,
                   ]
                 : [];
             }),
@@ -191,20 +192,7 @@ export class DynamicForm {
     ]);
   }
 
-  getAllFieldsKeys() {
-    return this.fields.reduce(
-      (acc, [, keybindingField]) => {
-        if (keybindingField.value && keybindingField.value.length > 0) {
-          acc[keybindingField.value] = true;
-        }
-
-        return acc;
-      },
-      {} as Record<string, boolean>,
-    );
-  }
-
-  validateKey(key: string) {
+  validateKey(key: string, idx: number) {
     const hintInput = this.hintInput;
 
     const chars = hintInput?.value.split('');
@@ -213,15 +201,37 @@ export class DynamicForm {
       return 'Required';
     }
     if (chars && chars.includes(key)) {
-      return `The '${key}' is already used in hints!`;
+      return `'${key}' is already used in hints!`;
     }
 
     const firstChar = splitKeySequence(key)[0];
     if (firstChar && firstChar.length === 1 && chars.includes(firstChar)) {
       return `'${firstChar}' is already used in hints!`;
     }
-    const allKeys = this.getAllFieldsKeys();
-    return allKeys[key] && `'${key}' is already used!`;
+    const allKeys = this.fields.reduce(
+      (acc, [, keybindingField], index) => {
+        if (
+          idx !== index &&
+          keybindingField.value &&
+          keybindingField.value.length > 0
+        ) {
+          acc[keybindingField.value] = true;
+        }
+
+        return acc;
+      },
+      {} as Record<string, boolean>,
+    );
+
+    if (allKeys[key]) {
+      return `'${key}' is already used!`;
+    }
+
+    const commonPrefix = Object.keys(allKeys).find((v) => key.startsWith(v));
+
+    if (commonPrefix) {
+      return `The prefix '${commonPrefix}' conflicts with an existing key and cannot be used.`;
+    }
   }
 
   handleSubmit(event: SubmitEvent) {
@@ -243,28 +253,39 @@ export class DynamicForm {
         `input[type='text']`,
       );
 
-    const errors: string[] = [];
+    const nonEmptyInputs: HTMLInputElement[] = [];
+    const nonEmptyValues: string[] = [];
+    const emptyInputs: HTMLInputElement[] = [];
 
     inputs.forEach((input) => {
-      const msg = input.value.length === 0 && 'Required';
+      if (input.value.length === 0) {
+        emptyInputs.push(input);
+      } else {
+        nonEmptyInputs.push(input);
+        nonEmptyValues.push(input.value);
+      }
+    });
 
-      if (msg) {
+    const invalidPrefixGroups = groupByCommonPrefix(nonEmptyValues);
+
+    const invalidValues = Object.entries(invalidPrefixGroups).flatMap(
+      ([_k, value]) => value,
+    );
+
+    nonEmptyInputs.forEach((input) => {
+      const isInvalid = invalidValues.includes(input.value);
+      if (isInvalid) {
         input.classList.add('invalid');
-        errors.push(msg);
       } else {
         input.classList.remove('invalid');
       }
     });
 
-    this.updateSubmitButton();
-  }
-
-  validateInput(input: HTMLInputElement) {
-    if (input.value.length === 0) {
+    emptyInputs.forEach((input) => {
       input.classList.add('invalid');
-    } else {
-      input.classList.remove('invalid');
-    }
+    });
+
+    this.updateSubmitButton();
   }
 
   createRow(pair: FieldPair, index: number) {
@@ -282,15 +303,16 @@ export class DynamicForm {
 
     const handleRecording = () =>
       new KeyRecorder({
-        validate: (value) => this.validateKey(value),
+        validate: (value) => {
+          return this.validateKey(value, index);
+        },
         onSubmit: (value) => {
           keybindingField.value = value;
           input.value = value;
-          this.validateInput(input);
-          this.updateSubmitButton();
+          this.validateAll();
         },
         onCancel: () => {
-          this.validateInput(input);
+          this.validateAll();
           this.updateSubmitButton();
         },
       });
