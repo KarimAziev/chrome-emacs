@@ -188,7 +188,7 @@ describe('splitPreservingConsecutiveSeparators', () => {
     ['Ctrl-x  ', ['Ctrl', 'x', ' ']],
     ['Ctrl-x ', ['Ctrl', 'x']],
     [' ', [' ']],
-  ])('splitKeySequence("%s") => %s', (str, expected) => {
+  ])('splitPreservingConsecutiveSeparators("%s") => %s', (str, expected) => {
     expect(splitPreservingConsecutiveSeparators(str, ['-', ' '])).toEqual(
       expected,
     );
