@@ -117,7 +117,7 @@ const initOptions = async () => {
 
         messager.success('Configuration saved.', {
           title: 'Chrome Emacs: ',
-          delay: 500,
+          delay: 1000,
         });
       } catch (err) {
         messager.error('Error occured.', { title: 'Chrome Emacs: ' });
