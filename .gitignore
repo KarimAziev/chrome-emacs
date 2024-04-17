@@ -2,3 +2,4 @@ app/scripts
 node_modules/
 app/atomic-chrome.zip
 app/chrome-emacs.zip
+app/options.html

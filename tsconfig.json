@@ -16,6 +16,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "experimentalDecorators": true,
+    "downlevelIteration": true,
     "types": [
       "chrome",
       "ace",
@@ -23,7 +24,8 @@
       "codemirror",
       "node",
       "events",
-      "uuid"
+      "uuid",
+      "jest"
     ],
     "baseUrl": ".",
     "paths": {
@@ -31,5 +33,5 @@
       "dummy-codemirror": ["src/shims/codemirror.js"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "__tests__"]
 }

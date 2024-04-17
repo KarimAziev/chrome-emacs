@@ -1,11 +1,12 @@
 import { addStyle } from '@/util/dom';
+import { KeyReader } from '@/util/key-reader';
 
 const HINT_ATTRIBUTE_NAME = 'data-chrome-emacs-hint';
 
 export interface HintItem<Value = unknown> {
   element: HTMLElement;
   tooltipText?: string;
-  value?: Value;
+  value: Value;
 }
 
 export interface MakeHintParams<Value = unknown> {
@@ -20,20 +21,30 @@ export interface HintElem extends HTMLDivElement {
   cleanup: () => void;
 }
 
-export type HintPair<Value = unknown> = [HintElem, HintItem<Value>];
-
-class HintReader {
+export interface HintReaderParams {
+  characters?: string;
+  exitKeybingings?: string[];
+}
+class HintReader<Value> {
   private isReading: boolean = false;
-  private hints: HintPair[] = [];
-  private listener: ((e: KeyboardEvent) => void) | null = null;
+  private hints: [HintElem, HintItem<Value>][] = [];
   private observers: IntersectionObserver[] = [];
   private resizeObservers: ResizeObserver[] = [];
+  private reader: KeyReader;
 
-  characters = 'asdfgqwertzxcvb';
+  private characters = 'ASDFGQWERTZXCVB';
+  private exitKeybingings = ['Ctrl-g', 'Escape'];
 
-  constructor() {
+  constructor({ characters, exitKeybingings }: HintReaderParams) {
     const existingHints = document.querySelectorAll(`[${HINT_ATTRIBUTE_NAME}]`);
+    if (characters) {
+      this.characters = characters;
+    }
+    if (exitKeybingings) {
+      this.exitKeybingings = exitKeybingings;
+    }
     this.updateHintPositions = this.updateHintPositions.bind(this);
+    this.onPartialMatch = this.onPartialMatch.bind(this);
     this.isReading = existingHints.length > 0;
   }
 
@@ -42,10 +53,6 @@ class HintReader {
       this.isReading ||
       document.querySelectorAll(`[${HINT_ATTRIBUTE_NAME}]`).length > 0
     );
-  }
-
-  isEscapeKey(event: KeyboardEvent): boolean {
-    return (event.ctrlKey && event.key === 'g') || event.key === 'Escape';
   }
 
   private getHintStyleFromRect(
@@ -59,7 +66,6 @@ class HintReader {
       height: `${rect.height + 1}px`,
       cursor: 'pointer',
       zIndex: '10000',
-      background: 'rgba(0,0,0,0.2)',
       transition: 'background 0.3s ease-in',
     };
   }
@@ -71,33 +77,43 @@ class HintReader {
     });
   }
 
-  genLabels(total: number): string[] {
+  genLabels(amount: number): string[] {
     const characters = this.characters;
-    let hints: string[] = [''];
-    let counter = 0;
+    const shortcuts: string[] = [];
+    const length =
+      amount === 1
+        ? 1
+        : Math.ceil(Math.log(amount) / Math.log(characters.length));
 
-    while (counter < total) {
-      const prefix = hints[counter++];
-      if (!prefix) {
-        hints = characters.split('').concat(hints);
-        continue;
+    const generate = (prefix: string, len: number) => {
+      if (len === 0) {
+        if (shortcuts.length < amount) {
+          shortcuts.push(prefix);
+        }
+        return;
       }
-      hints = hints.concat(characters.split('').map((char) => char + prefix));
-    }
+      for (let i = 0; i < characters.length && shortcuts.length < amount; i++) {
+        generate(prefix + characters[i], len - 1);
+      }
+    };
 
-    return hints.slice(0, total).map((label) => label.toUpperCase());
+    generate('', length);
+
+    return shortcuts;
   }
 
-  private async makeHint<Value>(params: MakeHintParams<Value>) {
+  private async makeHint(params: MakeHintParams<Value>) {
     const { elem, text, onClick, tooltipText } = params;
     const hint = document.createElement('div') as HintElem;
-    const hintText = document.createElement('span');
+    const hintText = document.createElement('kbd');
     const tooltip = document.createElement('span');
 
     hint.setAttribute(HINT_ATTRIBUTE_NAME, text);
 
     hint.appendChild(hintText);
     hint.appendChild(tooltip);
+
+    hint.style.background = 'rgba(0,0,0,0.4)';
 
     hintText.textContent = text;
     tooltip.textContent = tooltipText || '';
@@ -139,7 +155,7 @@ class HintReader {
     };
 
     const unhighlight = () => {
-      hint.style.background = 'rgba(0,0,0,0.5)';
+      hint.style.background = 'rgba(0,0,0,0.4)';
       tooltip.style.opacity = '0';
     };
 
@@ -189,7 +205,43 @@ class HintReader {
     this.hints.push([hint, params.item]);
   }
 
-  public readItems<Value>(
+  private findHintPair(text: string) {
+    return (
+      this.hints.find(
+        ([h, _item]) =>
+          h.isConnected && h.getAttribute(HINT_ATTRIBUTE_NAME) === text,
+      ) || []
+    );
+  }
+
+  private onPartialMatch(text?: string) {
+    this.hints.forEach(([h, _item]) => {
+      const textElem = h.firstElementChild!;
+      const elText = textElem.textContent!;
+      if (text && h.getAttribute(HINT_ATTRIBUTE_NAME)?.startsWith(text)) {
+        const suffix = elText.substring(text.length);
+        const suffixEl = document.createElement('span');
+        suffixEl.textContent = suffix;
+        const prefixEl = document.createElement('span');
+        prefixEl.textContent = text;
+
+        addStyle(prefixEl, { color: 'grey' });
+        textElem.replaceChildren(prefixEl, suffixEl);
+        h.style.background = 'rgba(0,0,0,0.1)';
+      } else if (text) {
+        const prefixEl = document.createElement('span');
+        prefixEl.textContent = elText;
+        addStyle(prefixEl, { color: 'grey' });
+        textElem.replaceChildren(prefixEl);
+        h.style.background = 'rgba(0,0,0,0.4)';
+      } else {
+        textElem.replaceChildren(elText);
+        h.style.background = 'rgba(0,0,0,0.4)';
+      }
+    });
+  }
+
+  public readItems(
     itemsOrItemsCreator: HintItem<Value>[] | (() => HintItem<Value>[]),
   ): Promise<HintItem<Value>> {
     return new Promise(async (resolve, reject) => {
@@ -198,33 +250,46 @@ class HintReader {
       }
       this.isReading = true;
 
-      const onClick = (text: string) => {
-        const simulatedEvent = new KeyboardEvent('keydown', { key: text });
-        this.handleKeydown(resolve, reject, simulatedEvent);
-      };
-
-      this.listener = (event: KeyboardEvent) =>
-        this.handleKeydown(resolve, reject, event);
-
       const items = Array.isArray(itemsOrItemsCreator)
         ? itemsOrItemsCreator
         : itemsOrItemsCreator();
 
       if (items.length > 0) {
-        const hintChars = this.genLabels(items.length);
+        const hintChars = this.genLabels(items.length).map((str) =>
+          str.length === 1 ? str : str.split('').join(' '),
+        );
+
+        const onDone = (text: string) => {
+          const [_el, item] = this.findHintPair(text);
+          if (item) {
+            resolve(item);
+          } else {
+            reject(item);
+          }
+
+          this.cancel();
+        };
 
         items.forEach((item, i) =>
-          this.makeHint<Value>({
+          this.makeHint({
             elem: item.element,
             item,
             text: hintChars[i],
             tooltipText: item.tooltipText,
-            onClick,
+            onClick: onDone,
           }),
         );
-        window.addEventListener('scroll', this.updateHintPositions);
+
         window.addEventListener('resize', this.updateHintPositions);
-        window.addEventListener('keydown', this.listener);
+
+        this.reader = new KeyReader({
+          keybindings: [...hintChars, ...this.exitKeybingings],
+          onDone,
+          preventDefaults: true,
+          onPartialDone: this.onPartialMatch,
+          onMismatch: this.onPartialMatch,
+        });
+        this.reader.listen();
       } else {
         this.cancel();
         reject();
@@ -232,29 +297,12 @@ class HintReader {
     });
   }
 
-  private handleKeydown<Value>(
-    resolve: (el: HintItem<Value>) => void,
-    reject: (reason?: any) => void,
-    event: KeyboardEvent,
-  ) {
-    const key = event.key.toUpperCase();
-    const isCancelled = this.isEscapeKey(event);
-
-    const [_hintItem, item] =
-      this.hints.find(
-        ([h, _item]) =>
-          h.isConnected && h.getAttribute(HINT_ATTRIBUTE_NAME) === key,
-      ) || [];
-
-    if (item || isCancelled) {
-      event.preventDefault();
-      this.cancel();
-      item ? resolve(item as HintItem<Value>) : reject(new Error('Cancelled'));
-    }
-  }
-
   public cancel(): void {
     this.isReading = false;
+    if (this.reader) {
+      this.reader.cleanup();
+    }
+
     this.cleanup();
   }
 
@@ -263,11 +311,7 @@ class HintReader {
       hint.cleanup();
       hint.remove();
     });
-    if (this.listener) {
-      window.removeEventListener('keydown', this.listener);
-      this.listener = null;
-    }
-    window.removeEventListener('scroll', this.updateHintPositions);
+
     window.removeEventListener('resize', this.updateHintPositions);
     this.observers.forEach((o) => o.disconnect());
     this.observers = [];
@@ -278,4 +322,4 @@ class HintReader {
   }
 }
 
-export default new HintReader();
+export { HintReader };

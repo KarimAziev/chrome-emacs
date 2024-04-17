@@ -1,12 +1,15 @@
 import { loadHandler } from '@/util/loadHandler';
 import { handlerFactory } from '@/handlers';
 import { DebouncedWindowEventListener } from '@/util/debounced-event-listener';
-import HintReader from '@/content-script-tools/hint-reader';
+import { HintReader } from '@/content-script-tools/hint-reader';
 import type { IHandlerConstructor } from '@/handlers/types';
 import type { First } from '@/util/types';
+import { loadSettings } from '@/options/load-settings';
+
+export type ElementValue = First<ReturnType<typeof ElementReader.getElems>>;
 
 class ElementReader {
-  private static getElems() {
+  static getElems() {
     return ElementReader.getElemsWithHandlers().map(([handler, element]) => ({
       element: handler.getHintArea(element) || element,
       value: [handler, element] as [typeof handler, typeof element],
@@ -86,35 +89,42 @@ class ElementReader {
   public async readElement(): Promise<
     First<ReturnType<typeof ElementReader.getElems>> | undefined
   > {
+    const settings = await loadSettings();
+
+    const hintInstance = new HintReader({
+      characters: settings.hints,
+      exitKeybingings: settings.keybindings.exitHint,
+    });
+    const isHintReading = hintInstance.getIsReading();
+
+    if (isHintReading) {
+      return;
+    }
     let scrolled = false;
 
     const scroller = new DebouncedWindowEventListener('scroll');
+
     try {
       do {
         const winner = await Promise.race([
-          HintReader.readItems(ElementReader.getElems),
+          hintInstance.readItems(ElementReader.getElems),
           scroller.waitOnce(500).then(() => ({ value: true })),
         ]);
         if (Array.isArray(winner.value)) {
           scroller.clear();
           return winner as First<ReturnType<typeof ElementReader.getElems>>;
         }
-        HintReader.cancel();
+        hintInstance.cancel();
         scrolled = winner.value === true;
       } while (scrolled);
     } catch (error) {
       scroller.clear();
-      HintReader.cancel();
+      hintInstance.cancel();
     }
   }
 
   public async readAndLoadElement(): Promise<void> {
     if (!document?.hasFocus()) {
-      return;
-    }
-    const isHintReading = HintReader.getIsReading();
-
-    if (isHintReading) {
       return;
     }
 

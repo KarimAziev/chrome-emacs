@@ -1,7 +1,7 @@
 import { isString } from '@/util/guard';
 
 export const capitalize = <T>(s: T) =>
-  isString(s) ? s[0].toUpperCase() + s.slice(1) : s;
+  s === '' ? s : isString(s) ? s[0].toUpperCase() + s.slice(1) : s;
 
 export const htmlEscape = <T>(s: T) =>
   isString(s)

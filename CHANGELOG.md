@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 0.4.0 (2024-04-18)
+
+- Added an options page, which allows users to configure which letters to use for hints and exit keybindings.
+- Pinned icons are now highlighted according to the tab.
+
 ## Version 0.3.1 (2024-04-03)
 
 - Fixed an issue on some sites, such as [replit.com](https://replit.com), where editing failed due to weird ID attribute values in DOM elements. Although IDs that start with a digit are valid in HTML, they require special escaping in CSS selectors.
