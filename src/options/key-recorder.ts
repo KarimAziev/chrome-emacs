@@ -66,27 +66,27 @@ export class KeyRecorder {
     this.resetButton = createElem('button', {
       disabled: true,
       innerText: 'Reset',
-      className: 'primary',
+      className: 'secondary',
       onclick: () => {
         this.resetRecording();
       },
     }) as HTMLButtonElement;
     this.submitButton = createElem('button', {
       disabled: true,
-      className: 'secondary',
+      className: 'primary',
       innerText: 'Submit',
     }) as HTMLButtonElement;
     this.cancelButton = createElem('button', {
       innerText: 'Cancel',
-      className: 'primary',
+      className: 'secondary',
     });
     this.wrapper = createElem('section', { className: 'modal' });
     this.wrapper.appendChild(this.label);
 
     const footer = createElem('footer', null, [
+      this.cancelButton,
       this.resetButton,
       this.submitButton,
-      this.cancelButton,
     ]);
 
     const body = createElem('div', { className: 'content' }, [
@@ -171,7 +171,7 @@ export class KeyRecorder {
       return false;
     }
     const errorMsg = this.validate && this.validate(this.keyInput.value);
-    this.errorSpan.innerText = isString(errorMsg)
+    this.errorSpan.innerHTML = isString(errorMsg)
       ? errorMsg
       : errorMsg
         ? 'Invalid'
