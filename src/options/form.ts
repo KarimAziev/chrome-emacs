@@ -180,7 +180,7 @@ export class DynamicForm {
       this.validateAll();
     };
 
-    this.hintInput.onblur = () => {
+    this.hintInput.onchange = () => {
       this.validateAll();
     };
 
@@ -298,17 +298,11 @@ export class DynamicForm {
 
     const handleRecording = () =>
       new KeyRecorder({
-        validate: (value) => {
-          return this.validateKey(value, index);
-        },
+        validate: (value) => this.validateKey(value, index),
         onSubmit: (value) => {
           keybindingField.value = value;
           input.value = value;
           this.validateAll();
-        },
-        onCancel: () => {
-          this.validateRowsFields();
-          this.updateSubmitButton();
         },
       });
 
