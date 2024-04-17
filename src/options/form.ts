@@ -2,7 +2,6 @@ import { KeyRecorder } from '@/options/key-recorder';
 import { createElem } from '@/options/util';
 import { splitKeySequence } from '@/util/keyboard-util';
 import './options.scss';
-import { groupByCommonPrefix } from '@/util/string';
 
 export interface Option {
   label: string;
@@ -77,7 +76,7 @@ export class DynamicForm {
     this.form = document.querySelector('#optionsForm') as HTMLFormElement;
 
     this.form.append(hintsWrapper, dynamicFieldsSet, this.makeFooter());
-    this.validateAll = this.validateAll.bind(this);
+    this.validateRowsFields = this.validateRowsFields.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
 
     this.onSave = onSave;
@@ -108,7 +107,7 @@ export class DynamicForm {
     this.updateSubmitButton();
   }
 
-  getHintsErrors() {
+  validateHints() {
     const value = this.hintInput.value;
     const chars = value.split('');
     const dubSet = new Set();
@@ -121,44 +120,45 @@ export class DynamicForm {
       seen.add(el);
     }
 
-    const dubs = Array.from(dubSet).map((c) => `Duplicated char '${c}'`);
+    const dubs = Array.from(dubSet).map((c) => `Duplicated char <b>${c}</b>`);
 
     const invalidMessages =
       chars.length <= 1
         ? ['Minimum length is 2 characters']
         : dubs.concat(
-            chars.flatMap((c) => {
-              const pair = this.fields?.find(
-                ([, { value }]) => splitKeySequence(value)[0] === c,
-              );
-              const keybinding = pair && pair[1].value;
+            Array.from(
+              new Set(
+                chars.flatMap((c) => {
+                  const pair = this.fields?.find(
+                    ([, { value }]) => splitKeySequence(value)[0] === c,
+                  );
+                  const keybinding = pair && pair[1].value;
 
-              const keybindingCmd = pair && pair[0].value;
-              return keybinding
-                ? [
-                    c === keybinding
-                      ? `${c} is used in command ${keybindingCmd}`
-                      : `${c} is used in the '${keybindingCmd}' command's keybinding '${keybinding}'`,
-                  ]
-                : [];
-            }),
+                  const keybindingCmd = pair && pair[0].value;
+                  return keybinding
+                    ? [
+                        c === keybinding
+                          ? `<b>${c}</b> is used in command <b>${keybindingCmd}</b>`
+                          : `<b>${c}</b> is used in the <b>${keybindingCmd}</b> command's keybinding <b>${keybinding}</b>`,
+                      ]
+                    : [];
+                }),
+              ),
+            ),
           );
 
     const isInvalid = invalidMessages.length > 0;
 
     this.hintErrorsBox.innerHTML = '';
+
     if (isInvalid) {
-      invalidMessages.forEach((m) =>
-        this.hintErrorsBox.appendChild(createElem('div', { innerText: m })),
-      );
-      this.hintInput.classList.add('invalid');
+      this.hintErrorsBox.innerHTML = invalidMessages[0];
+      this.hintInput.parentElement?.classList.add('invalid');
     } else {
-      this.hintInput.classList.remove('invalid');
+      this.hintInput.parentElement?.classList.remove('invalid');
     }
 
-    this.updateSubmitButton();
-
-    return isInvalid && invalidMessages;
+    return invalidMessages;
   }
 
   configureHintInput(hints: DynamicFormParams['hints']) {
@@ -170,25 +170,27 @@ export class DynamicForm {
       name: 'hints',
     });
 
-    this.hintErrorsBox = createElem('div', { className: 'error' });
+    this.hintErrorsBox = createElem('div', { className: 'error-box' });
 
     const hintLabel = createElem('label', {
       htmlFor: 'hints',
     });
 
     this.hintInput.oninput = () => {
-      this.getHintsErrors();
+      this.validateAll();
     };
 
     this.hintInput.onblur = () => {
-      this.getHintsErrors();
+      this.validateAll();
     };
 
     return createElem('fieldset', null, [
       createElem('legend', { innerText: 'Hints' }),
       hintLabel,
-      this.hintInput,
-      this.hintErrorsBox,
+      createElem('div', { className: 'field' }, [
+        this.hintInput,
+        this.hintErrorsBox,
+      ]),
     ]);
   }
 
@@ -201,12 +203,12 @@ export class DynamicForm {
       return 'Required';
     }
     if (chars && chars.includes(key)) {
-      return `'${key}' is already used in hints!`;
+      return `<b>${key}</b> is already used in hints`;
     }
 
     const firstChar = splitKeySequence(key)[0];
     if (firstChar && firstChar.length === 1 && chars.includes(firstChar)) {
-      return `'${firstChar}' is already used in hints!`;
+      return `<b>${firstChar}</b> is already used in hints`;
     }
     const allKeys = this.fields.reduce(
       (acc, [, keybindingField], index) => {
@@ -224,68 +226,61 @@ export class DynamicForm {
     );
 
     if (allKeys[key]) {
-      return `'${key}' is already used!`;
+      return `<b>${key}</b> is already used`;
     }
 
     const commonPrefix = Object.keys(allKeys).find((v) => key.startsWith(v));
 
     if (commonPrefix) {
-      return `The prefix '${commonPrefix}' conflicts with an existing key and cannot be used.`;
+      return `The prefix <b>${commonPrefix}</b> conflicts with an existing key`;
     }
   }
 
   handleSubmit(event: SubmitEvent) {
     event.preventDefault();
 
-    const errs = this.getHintsErrors();
+    const errs = this.validateAll();
     const fields = this.fields.filter(
       ([, keyItem]) => keyItem.value.length > 0,
     );
 
-    if (this.onSave && !errs && fields.length > 0) {
+    if (this.onSave && !errs.length && fields.length > 0) {
       this.onSave(fields, this.hintInput.value);
     }
   }
 
   validateAll() {
-    const inputs =
-      this.dynamicFields.querySelectorAll<HTMLInputElement>(
-        `input[type='text']`,
-      );
+    const errs = [...this.validateRowsFields(), ...this.validateHints()];
+    this.submitButton.disabled = errs.length > 0;
+    return errs;
+  }
 
-    const nonEmptyInputs: HTMLInputElement[] = [];
-    const nonEmptyValues: string[] = [];
-    const emptyInputs: HTMLInputElement[] = [];
-
-    inputs.forEach((input) => {
-      if (input.value.length === 0) {
-        emptyInputs.push(input);
-      } else {
-        nonEmptyInputs.push(input);
-        nonEmptyValues.push(input.value);
-      }
-    });
-
-    const invalidPrefixGroups = groupByCommonPrefix(nonEmptyValues);
-
-    const invalidValues = Object.entries(invalidPrefixGroups).flatMap(
-      ([_k, value]) => value,
+  validateRowsFields() {
+    const inputs = this.dynamicFields.querySelectorAll<HTMLInputElement>(
+      `input[name='keybinding']`,
     );
 
-    nonEmptyInputs.forEach((input) => {
-      const isInvalid = invalidValues.includes(input.value);
-      if (isInvalid) {
-        input.classList.add('invalid');
+    const errors: string[] = [];
+
+    inputs.forEach((input, idx) => {
+      const err = this.validateKey(input.value, idx);
+      const parent = input.parentElement;
+      const errBox = parent?.querySelector('.error-box');
+      if (err) {
+        errors.push(err);
+        parent?.classList.add('invalid');
+        if (errBox) {
+          errBox.innerHTML = err;
+        }
       } else {
-        input.classList.remove('invalid');
+        parent?.classList.remove('invalid');
+        if (errBox) {
+          errBox.innerHTML = '';
+        }
       }
     });
 
-    emptyInputs.forEach((input) => {
-      input.classList.add('invalid');
-    });
-
-    this.updateSubmitButton();
+    return errors;
   }
 
   createRow(pair: FieldPair, index: number) {
@@ -312,14 +307,14 @@ export class DynamicForm {
           this.validateAll();
         },
         onCancel: () => {
-          this.validateAll();
+          this.validateRowsFields();
           this.updateSubmitButton();
         },
       });
 
     const input = createElem('input', {
       type: 'text',
-      onclick: handleRecording,
+      name: 'keybinding',
       value: keybindingField.value,
       required: true,
       onbeforeinput: (e) => {
@@ -331,7 +326,7 @@ export class DynamicForm {
 
     const removeButton = createElem('button', {
       textContent: '\u2716',
-      className: 'remove',
+      className: 'primary-color circle',
       type: 'button',
       disabled: optionsField.props?.disabled && keybindingField.props?.disabled,
       onclick: () => {
@@ -340,8 +335,8 @@ export class DynamicForm {
     });
 
     const row = createElem('div', { className: 'form-row' }, [
-      select,
-      input,
+      this.makeField(select),
+      this.makeField(input, { onclick: handleRecording }),
       removeButton,
     ]);
     return row;
@@ -359,6 +354,16 @@ export class DynamicForm {
         el.scrollIntoView();
       }
     }
+  }
+
+  private makeField(
+    inputElem: HTMLElement,
+    props?: Parameters<typeof createElem>[1],
+  ) {
+    return createElem('div', { className: 'field', ...props }, [
+      inputElem,
+      createElem('div', { className: 'error-box' }),
+    ]);
   }
 
   handleReset(e: Event) {
@@ -394,7 +399,7 @@ export class DynamicForm {
       className: 'secondary',
     });
 
-    const footer = createElem('div', { className: 'add-save-buttons' }, [
+    const footer = createElem('div', { className: 'form-footer' }, [
       createElem('button', {
         textContent: 'Add Key',
         type: 'button',
