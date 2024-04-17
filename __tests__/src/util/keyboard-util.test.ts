@@ -3,6 +3,7 @@ import {
   splitPreservingConsecutiveSeparators,
   parseKeySequence,
   formatKeyboardEvents,
+  validateKeyString,
 } from '@/util/keyboard-util';
 
 describe('splitKeySequence', () => {
@@ -359,5 +360,43 @@ describe('parseKeySequence and formatKeyboardEvents', () => {
     'Space',
   ])('formatKeyboardEvents(parseKeySequence(%j))', (str) => {
     expect(formatKeyboardEvents(parseKeySequence(str))).toEqual(str);
+  });
+});
+
+describe('validateKeyString with valid keys', () => {
+  test.each([
+    'Ctrl-x f r',
+    'Ctrl-x Space r',
+    'Ctrl-x Space r',
+    'Ctrl-Alt-Shift-Space',
+    'Ctrl-Alt-Space r',
+    'q',
+    'Ctrl-g',
+    'Escape',
+    'Q',
+    'Ctrl-x Space Space Space',
+    'Space Space Space',
+    'Space Space',
+    'Space',
+  ])('formatKeyboardEvents(parseKeySequence(%j))', (str) => {
+    expect(validateKeyString(str)).toEqual(true);
+  });
+});
+
+describe('validateKeyString with invalid keys', () => {
+  test.each([
+    'Ctrl-Alt-Shift',
+    'Ctrl Alt',
+    '',
+    'Ctrl-Shift',
+    'Alt-Shift',
+    'Ctrl-Alt-Shift',
+    'Ctrl Alt',
+    'Ctrl',
+    'Shift',
+    'Meta',
+    'Alt',
+  ])('formatKeyboardEvents(parseKeySequence(%j))', (str) => {
+    expect(validateKeyString(str)).toEqual(false);
   });
 });
