@@ -107,17 +107,17 @@ jobs:
         run: npm run build
       - name: Zip the app directory for release
         run: |
-          cd $DIRECTORY
-          ZIP_NAME="release-${NEW_VERSION}.zip"
+          cd ${{ env.DIRECTORY }}
+          ZIP_NAME="release-${{ env.NEW_VERSION }}.zip"
           zip -r "../${ZIP_NAME}" ./*
+          echo "ZIPPED_FILE=${ZIP_NAME}" >> $GITHUB_ENV
           cd ..
-          echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
         
       - name: Upload zipped app as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v2
         with:
-          name: release-zip
-          path: ${{ env.ZIP_NAME }}
+          name: release-zip-${{ env.NEW_VERSION }}
+          path: ${{ github.workspace }}/${{ env.ZIPPED_FILE }}
 
   CreateAndUploadRelease:
     needs: [PrepareBuildAndZip]
@@ -127,7 +127,7 @@ jobs:
       - name: Download zipped app artifact
         uses: actions/download-artifact@v4
         with:
-          name: release-zip
+          name: release-zip-${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION }}
       - name: Create or Update Release
         id: create-release
         uses: ncipollo/release-action@v1
@@ -137,5 +137,5 @@ jobs:
           name: Release ${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION }}
           draft: false
           prerelease: false
-          artifacts: ${{ github.workspace }}/${{ env.ZIP_NAME }}
+          artifacts: "release-${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION }}.zip"
           token: ${{ secrets.GITHUB_TOKEN }}
