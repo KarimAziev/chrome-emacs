@@ -25,7 +25,7 @@ describe('splitKeySequence', () => {
     ['Space', [' ']],
     [' ', [' ']],
     ['Space Space', [' ', ' ']],
-  ])('splitKeySequence("%s") => %s', (str, expected) => {
+  ])('splitKeySequence("%s") => %j', (str, expected) => {
     expect(splitKeySequence(str)).toEqual(expected);
   });
 });
@@ -45,7 +45,7 @@ describe('splitPreservingConsecutiveSeparators', () => {
     ['Ctrl-x  ', ['Ctrl', 'x', ' ']],
     ['Ctrl-x ', ['Ctrl', 'x']],
     [' ', [' ']],
-  ])('splitPreservingConsecutiveSeparators("%s") => %s', (str, expected) => {
+  ])('splitPreservingConsecutiveSeparators("%s") => %j', (str, expected) => {
     expect(splitPreservingConsecutiveSeparators(str, ['-', ' '])).toEqual(
       expected,
     );
@@ -336,7 +336,7 @@ describe('parseKeySequence', () => {
         },
       ],
     ],
-  ])('parseKeySequence("%s") => %S', (str, expected) => {
+  ])('parseKeySequence("%s") => %j', (str, expected) => {
     expect(parseKeySequence(str)).toEqual(expected);
   });
 });
@@ -357,7 +357,7 @@ describe('parseKeySequence and formatKeyboardEvents', () => {
     'Space Space Space',
     'Space Space',
     'Space',
-  ])('formatKeyboardEvents(parseKeySequence("%s"))', (str) => {
+  ])('formatKeyboardEvents(parseKeySequence(%j))', (str) => {
     expect(formatKeyboardEvents(parseKeySequence(str))).toEqual(str);
   });
 });
