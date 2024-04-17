@@ -108,17 +108,14 @@ const initOptions = async () => {
     },
     onSave: async (fields, newhints?: string) => {
       const config = pairsToConfig(fields);
-      console.log('CONFIG', config);
+
       try {
         await chrome.storage.local.set({
           keybindings: config,
           hints: newhints || keybindingsConfig.hints || DEFAULT_HINTS,
         });
 
-        messager.success('Configuration saved.', {
-          title: 'Chrome Emacs: ',
-          delay: 1000,
-        });
+        window.close();
       } catch (err) {
         messager.error('Error occured.', { title: 'Chrome Emacs: ' });
       }
