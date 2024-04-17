@@ -66,7 +66,6 @@ class HintReader<Value> {
       height: `${rect.height + 1}px`,
       cursor: 'pointer',
       zIndex: '10000',
-      // background: 'rgba(0,0,0,0.4)',
       transition: 'background 0.3s ease-in',
     };
   }
