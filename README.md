@@ -38,7 +38,7 @@ Experimental support is also available. See key considerations for users [here](
 - ☑ [vscode.dev](https://vscode.dev/)
 - ☑ [codesandbox.io](https://codesandbox.io/)
 
-# Table of Contents <-- :TOC: -->
+# Table of Contents <!-- :TOC: -->
 
 - [About](#about)
 - [Installation](#installation)
