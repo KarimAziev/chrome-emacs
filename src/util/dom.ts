@@ -34,13 +34,10 @@ export const isElementVisible = (elem: Element) => {
 
 export const isContentEditableElement = (
   el: any,
-): el is ElementContentEditable => {
-  return el?.isContentEditable;
-};
+): el is ElementContentEditable => el?.isContentEditable;
 
-export const isElementTag = (tagName: string, element: Element) => {
-  return element?.tagName?.toLowerCase() === tagName;
-};
+export const isElementTag = (tagName: string, element: Element) =>
+  element?.tagName?.toLowerCase() === tagName;
 
 function getCssSelectorsOfEditable() {
   return 'textarea, [contenteditable], *[contenteditable=true], *[role=textbox], div.ace_cursor';
