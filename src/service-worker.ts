@@ -25,9 +25,7 @@ chrome.commands.onCommand.addListener(async (command) => {
   if (command === 'query-edit') {
     const tabs = await chrome.tabs.query({ currentWindow: true });
 
-    const activeTab = tabs.find((tab) => {
-      return tab.active;
-    });
+    const activeTab = tabs.find((tab) => tab.active);
     if (activeTab?.id) {
       chrome.scripting.executeScript({
         target: { tabId: activeTab.id },
