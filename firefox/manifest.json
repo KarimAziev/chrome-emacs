@@ -1,0 +1,57 @@
+{
+  "name": "__MSG_appName__",
+  "short_name": "__MSG_appShortName__",
+  "version": "0.4.0",
+  "manifest_version": 3,
+  "minimum_chrome_version": "116",
+  "description": "__MSG_appDescription__",
+  "icons": {
+    "16": "images/icon-16.png",
+    "128": "images/icon-128.png",
+    "19": "images/icon-19.png"
+  },
+  "default_locale": "en",
+  "background": {
+    "scripts": ["scripts/service-worker.js"]
+  },
+  "action": {
+    "default_icon": {
+      "19": "images/icon-19-inactive.png",
+      "38": "images/icon-38-inactive.png"
+    },
+    "default_title": "Chrome Emacs"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Period",
+        "mac": "Command+Period",
+        "linux": "Ctrl+Period"
+      },
+      "description": "Edit currently focused element"
+    },
+    "query-edit": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Period",
+        "mac": "Command+Shift+Period",
+        "linux": "Ctrl+Shift+Period"
+      },
+      "description": "Select and edit element"
+    }
+  },
+  "permissions": ["activeTab", "scripting", "storage", "tabs"],
+  "host_permissions": ["http://*/*", "https://*/*"],
+  "web_accessible_resources": [
+    {
+      "resources": ["scripts/injected.js"],
+      "matches": ["http://*/*", "https://*/*"]
+    }
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  },
+  "content_security_policy": {
+    "extension_pages": "default-src 'self'; connect-src http://localhost:64292 ws://localhost:64292;"
+  }
+}

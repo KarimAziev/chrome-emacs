@@ -1,0 +1,14 @@
+{
+  "appName": {
+    "message": "Chrome Emacs",
+    "description": "The name of the application"
+  },
+  "appShortName": {
+    "message": "ChrEmacs",
+    "description": "The short name of the application"
+  },
+  "appDescription": {
+    "message": "Use Emacs to edit textareas and online editors",
+    "description": "The description of the application"
+  }
+}

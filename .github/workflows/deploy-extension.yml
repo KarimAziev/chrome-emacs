@@ -20,7 +20,7 @@ on:
     branches:
       - main
 env:
-  DIRECTORY: app
+  DIRECTORY: chrome
   PROJECT_NAME: chrome-emacs
 
 jobs:
@@ -58,10 +58,10 @@ jobs:
           VERSION_FILE=version.env
           CURRENT_VERSION=$(jq -r '.version' $DIRECTORY/manifest.json)
           echo "OLD_VERSION=$CURRENT_VERSION" >> $GITHUB_OUTPUT
-          
+
           MANUAL_VERSION_TYPE="${{ github.event.inputs.versionType }}"
           MANUAL_NEW_VERSION="${{ github.event.inputs.newVersion }}"
-          
+
           if [[ -n "$MANUAL_NEW_VERSION" ]]; then
             NEW_VERSION="$MANUAL_NEW_VERSION"
           else
@@ -85,13 +85,13 @@ jobs:
             fi
             NEW_VERSION="${VERSION[0]}.${VERSION[1]}.${VERSION[2]}"
           fi
-          
+
           echo "New version: $NEW_VERSION"
           jq --arg v "$NEW_VERSION" '.version = $v' $DIRECTORY/manifest.json > temp.json && mv temp.json $DIRECTORY/manifest.json
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
           echo "NEW_VERSION=$NEW_VERSION" >> $VERSION_FILE
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
-          
+
           # Check if there are any changes
           if git diff --quiet --exit-code $DIRECTORY/manifest.json; then
             echo "No changes in manifest.json. Skipping commit and push."
@@ -112,7 +112,7 @@ jobs:
           zip -r "../${ZIP_NAME}" ./*
           echo "ZIPPED_FILE=${ZIP_NAME}" >> $GITHUB_ENV
           cd ..
-        
+
       - name: Upload zipped app as artifact
         uses: actions/upload-artifact@v4
         with:

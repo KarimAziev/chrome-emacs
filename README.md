@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![](./app/images/icon.png)
+![](./images/icon.png)
 
 </div>
 
