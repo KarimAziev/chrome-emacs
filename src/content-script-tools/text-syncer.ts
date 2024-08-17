@@ -17,7 +17,51 @@ const errorMessageByCode: {
   1006: `Failed to connect to server: <i>${WS_URL}</i>`,
 };
 
+// 10 seconds
+const KEEP_ALIVE_INTERVAL = 10 * 1000;
+
+const currentBrowser = process.env.BROWSER_TARGET;
+const shouldStartKeepAlive = currentBrowser === 'firefox';
+
 class TextSyncer {
+  private keepAliveIntervalId: NodeJS.Timeout | null = null;
+  /**
+   * Starts the keep-alive procedure to maintain communication with the background script.
+   *
+   * This mechanism is specifically implemented because Firefox may terminate the service worker
+   * and close the WebSocket connection if no events occur for 30 seconds, thereby disconnecting you.
+   *
+   * This mess is needed in Firefox due to their lack of support for keeping service workers alive with
+   * WebSocket activity alone (unlike Chrome from version 116 onward).
+   *
+   * @param port The Chrome Extension's port for background communication.
+   */
+  private startKeepAliveLoop(port: chrome.runtime.Port): void {
+    if (this.keepAliveIntervalId) {
+      clearTimeout(this.keepAliveIntervalId);
+    }
+
+    this.keepAliveIntervalId = setTimeout(() => {
+      try {
+        this.post(port, 'keepalive');
+        this.startKeepAliveLoop(port);
+      } catch (error) {
+        console.error('Failed to send keepalive message:', error);
+        this.stopKeepAlive();
+      }
+    }, KEEP_ALIVE_INTERVAL);
+  }
+
+  /**
+   * Stops the keep-alive procedure, ensuring that no further keep-alive messages are sent.
+   */
+  private stopKeepAlive(): void {
+    if (this.keepAliveIntervalId) {
+      clearInterval(this.keepAliveIntervalId);
+      this.keepAliveIntervalId = null;
+    }
+  }
+
   /**
    * Establishes a connection between the content script and background script,
    * and sets up listeners for text updates and disconnect events.
@@ -36,10 +80,17 @@ class TextSyncer {
 
     this.register(port, url, title, handler, options);
 
-    port.onMessage.addListener(this.makeMessageListener(handler));
+    port.onMessage.addListener(this.makeMessageListener(handler, port));
+
     const textChangeListener = this.makeTextChangeListener(port, handler);
+
+    if (shouldStartKeepAlive) {
+      this.startKeepAliveLoop(port);
+    }
+
     handler.bindChange(textChangeListener, false);
     port.onDisconnect.addListener(() => {
+      this.stopKeepAlive();
       handler.unbindChange(textChangeListener, false);
     });
   }
@@ -50,8 +101,12 @@ class TextSyncer {
    * @param handler - The handler instance managing the text element.
    * @returns A function to be used as the onMessage event listener.
    */
-  private makeMessageListener(handler: IHandler) {
+  private makeMessageListener(handler: IHandler, port: chrome.runtime.Port) {
     return (msg: MessageEventData) => {
+      if (shouldStartKeepAlive) {
+        this.startKeepAliveLoop(port);
+      }
+
       if (this[msg.type]) {
         return this[msg.type](handler, msg.payload);
       }
@@ -154,7 +209,7 @@ class TextSyncer {
   private post<T extends keyof SocketPostPayloadMap>(
     port: chrome.runtime.Port,
     type: T,
-    payload: SocketPostPayloadMap[T],
+    payload?: SocketPostPayloadMap[T],
   ) {
     return port.postMessage({ type, payload });
   }

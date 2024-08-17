@@ -147,6 +147,7 @@ export interface RegisterPayload
 export type SocketPostPayloadMap = {
   register: RegisterPayload;
   updateText: UpdateTextPayload;
+  keepalive?: undefined;
 };
 
 export type PostToInjectedPayloadMap = {
