@@ -38,17 +38,34 @@ Experimental support is also available. See key considerations for users [here](
 - ☑ [vscode.dev](https://vscode.dev/)
 - ☑ [codesandbox.io](https://codesandbox.io/)
 
-# Table of Contents <!-- :TOC: -->
+<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 
-- [About](#about)
-- [Installation](#installation)
-  - [Chrome Extension](#chrome-extension)
-  - [Emacs Integration](#emacs-integration)
-- [Usage](#usage)
-- [Customization](#customization)
-  - [How to Bind Shortcuts](#how-to-bind-shortcuts)
-  - [Extension Options](#extension-options)
-- [Development](#development)
+**Table of Contents**
+
+> - [About](#about)
+> - [Installation](#installation)
+>   - [Chrome Extension](#chrome-extension)
+>   - [Emacs Integration](#emacs-integration)
+>     - [With use-package and straight.el](#with-use-package-and-straightel)
+>     - [Manual Installation](#manual-installation)
+>     - [Run server](#run-server)
+> - [Usage](#usage)
+> - [Customization](#customization)
+>   - [How to Bind Shortcuts](#how-to-bind-shortcuts)
+>     - [Chrome](#chrome)
+>     - [Firefox](#firefox)
+>   - [Extension Options](#extension-options)
+>     - [Chrome](#chrome-1)
+>       - [From the Toolbar with a Pinned Icon](#from-the-toolbar-with-a-pinned-icon)
+>       - [From the Toolbar without a Pinned Icon](#from-the-toolbar-without-a-pinned-icon)
+>       - [From the Chrome Extensions URL](#from-the-chrome-extensions-url)
+>     - [Firefox](#firefox-1)
+>       - [From the Toolbar with a Pinned Icon](#from-the-toolbar-with-a-pinned-icon-1)
+>       - [From the Toolbar without a Pinned Icon](#from-the-toolbar-without-a-pinned-icon-1)
+>       - [From the Firefox Add-ons Manager](#from-the-firefox-add-ons-manager)
+> - [Development](#development)
+
+<!-- markdown-toc end -->
 
 # Installation
 
@@ -164,12 +181,23 @@ The text will now open in an Emacs buffer, ready for you to edit.
 
 ![Shortcuts](./images/shortcuts.png)
 
+### Chrome
+
 1. Navigate to `chrome://extensions`.
 2. Scroll down and click on `Keyboard shortcuts` at the bottom of the page.
 3. Assign shortcuts for the available commands:
+   - **Activate the extension** - This is the default action to edit the focused area. If there are no focused areas, it tries to detect them from the visible part of the page.
+   - **Select and edit an element** - Shows the key to press near editable elements to focus and start editing. To cancel, press either `ESC` or `Ctrl-g` (these keybindings may be changed, as well as the characters used in hints; [see Extension Options](#extension-options)).
 
-- **Activate the extension** - This is the default action to edit the focused area. If there are no focused areas, it tries to detect them from the visible part of the page.
-- **Select and edit an element** - Shows the key to press near editable elements to focus and start editing. To cancel, press either `ESC` or `Ctrl-g` (these keybindings may be changed, as well as the characters used in hints; [see Extension Options](#extension-options)).
+### Firefox
+
+![Shortcuts](./images/firefox-shortcuts.png)
+
+1. Navigate to `about:addons`.
+2. Click on the gear icon in the top right corner and select `Manage Extension Shortcuts`.
+3. Assign shortcuts for the available commands:
+   - **Activate the extension** - This is the default action to edit the focused area. If there are no focused areas, it tries to detect them from the visible part of the page.
+   - **Select and edit an element** - Shows the key to press near editable elements to focus and start editing. To cancel, press either `ESC` or `Ctrl-g` (these keybindings may be changed, as well as the characters used in hints; [see Extension Options](#extension-options)).
 
 ## Extension Options
 
@@ -179,23 +207,39 @@ In the options, you can configure which letters to use for hints and exit keybin
 
 There are several ways to open the extension's options:
 
-### From the Toolbar with a Pinned Icon
+### Chrome
+
+#### From the Toolbar with a Pinned Icon
 
 If you have pinned the Chrome Emacs icon on the toolbar, right-click on the icon and then click on "Options".
 
 ![Pinned](./images/pinned-options.png)
 
-### From the Toolbar without a Pinned Icon
+#### From the Toolbar without a Pinned Icon
 
 Another quick way is to click the "Extensions" button on the toolbar. This is the icon that looks like a small puzzle piece next to the profile avatar. In the dropdown, find Chrome Emacs, and click the settings icon, which looks like a "vertical ellipsis". Then click on "Options".
 
 ![Toolbar](./images/toolbar-options.png)
 
-### From the Chrome Extensions URL
+#### From the Chrome Extensions URL
 
 Alternatively, navigate to `chrome://extensions`, find Chrome Emacs, click on "Details", and then click on "Extension options".
 
 ![Details](./images/options-in-details.png)
+
+### Firefox
+
+#### From the Toolbar with a Pinned Icon
+
+If you have pinned the Firefox Emacs icon on the toolbar, right-click on the icon and then click on "Preferences".
+
+#### From the Toolbar without a Pinned Icon
+
+Click the "Extensions" puzzle piece icon on the toolbar, find Firefox Emacs in the list, and click on the "Preferences" link.
+
+#### From the Firefox Add-ons Manager
+
+Navigate to `about:addons`, find Firefox Emacs, click on the "Preferences" button.
 
 In the options popup, after making changes, remember to click on the "Save" button.
 
@@ -204,29 +248,54 @@ In the options popup, after making changes, remember to click on the "Save" butt
 <details><summary>Local Setup </summary>
 
 1. Clone the repository to your local machine:
-   ```
+   ```bash
    git clone https://github.com/KarimAziev/chrome-emacs.git
    ```
 2. Ensure the correct version of Node.js is installed, as specified in the [.nvmrc](https://github.com/KarimAziev/chrome-emacs/blob/16a754fc24e50034a053b18aaa4e15bbf0cad541/.nvmrc#L1) file. Switch to the correct version with `nvm use`, if using NVM.
+
 3. Install required dependencies:
-   ```
+   ```bash
    npm install
    ```
 4. Build the extension:
 
 - For rebuilding the extension on file save, run:
-  ```
+
+  ```bash
   npm run dev
   ```
+
+  This will build and watch both Chrome and Firefox versions concurrently.
+
 - For a one-time build:
-  ```
+
+  ```bash
   npm run build
   ```
 
-5. Load the built `app` directory into Chrome:
-   - Navigate to `chrome://extensions/`
-   - Toggle "Developer mode" at the top right.
-   - Click "Load unpacked" and select the `app` directory.
+  This will build both Chrome and Firefox versions.
+
+- To specifically build for Chrome:
+
+  ```bash
+  npm run build:chrome
+  ```
+
+- To specifically build for Firefox:
+  ```bash
+  npm run build:firefox
+  ```
+
+5. Load the built extension into your browser:
+
+   - **Chrome**:
+     - Navigate to `chrome://extensions/`
+     - Toggle "Developer mode" at the top right.
+     - Click "Load unpacked" and select the `chrome` directory.
+   - **Firefox**:
+     - Navigate to `about:debugging#/runtime/this-firefox`
+     - Click "Load Temporary Add-on"
+     - Select any file in the `firefox` directory (i.e., `manifest.json`)
 
 </details>
 
