@@ -122,6 +122,14 @@ jobs:
           zip -r "../${ZIP_NAME}" ./*
           echo "FIREFOX_ZIPPED_FILE=${ZIP_NAME}" >> $GITHUB_ENV
           cd ..
+      - name: Zip the source code for submission
+        run: |
+          cd ..
+          SOURCE_ZIP_NAME="source-code-${{ steps.update-version.outputs.NEW_VERSION }}.zip"
+          zip -r "${SOURCE_ZIP_NAME}" \
+              webpack.config.js tsconfig.json README.md .nvmrc LICENSE CHANGELOG.md .prettierrc.js .gitignore \
+              chrome docs firefox package.json package-lock.json jest.environment.ts jest.config.ts src __tests__ images icons chrome-emacs.gif
+          echo "SOURCE_ZIPPED_FILE=${SOURCE_ZIP_NAME}" >> $GITHUB_ENV
       - name: Upload Chrome zipped app as artifact
         uses: actions/upload-artifact@v4
         with:
@@ -132,6 +140,11 @@ jobs:
         with:
           name: firefox-release-zip-${{ steps.update-version.outputs.NEW_VERSION }}
           path: ${{ github.workspace }}/${{ env.FIREFOX_ZIPPED_FILE }}
+      - name: Upload source code zip as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-code-zip-${{ steps.update-version.outputs.NEW_VERSION }}
+          path: ${{ github.workspace }}/${{ env.SOURCE_ZIPPED_FILE }}
 
   CreateAndUploadRelease:
     needs: [PrepareBuildAndZip]
@@ -146,6 +159,10 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: firefox-release-zip-${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION }}
+      - name: Download source code zip artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: source-code-zip-${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION }}
       - name: Create or Update Release
         id: create-release
         uses: ncipollo/release-action@v1
@@ -158,4 +175,5 @@ jobs:
           artifacts: |
             chrome-release-${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION }}.zip
             firefox-release-${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION }}.zip
+            source-code-${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION }}.zip
           token: ${{ secrets.GITHUB_TOKEN }}
