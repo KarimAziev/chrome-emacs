@@ -5,6 +5,11 @@
   "manifest_version": 3,
   "minimum_chrome_version": "116",
   "description": "__MSG_appDescription__",
+  "applications": {
+    "gecko": {
+      "id": "chrome-emacs@karimaziiev"
+    }
+  },
   "icons": {
     "16": "images/icon-16.png",
     "128": "images/icon-128.png",
