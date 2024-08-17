@@ -6,7 +6,7 @@
 
 </div>
 
-This is a [Chrome Extension](https://chromewebstore.google.com/detail/chrome-emacs/dabdpcafiblbndpoadckibiaojbdnpjg) focused on bi-directional editing in online text editors and text areas from within Emacs.
+This [Chrome Extension](https://chromewebstore.google.com/detail/chrome-emacs/dabdpcafiblbndpoadckibiaojbdnpjg) and [Firefox add-on](https://addons.mozilla.org/en-US/firefox/addon/chrome-emacs) are focused on bi-directional editing in online text editors and text areas from within Emacs.
 
 After the original Atomic Chrome extension was removed from the Chrome Web Store due to policy violations, I undertook the task of creating an entirely refreshed and compliant version. Now named "Chrome Emacs," it represents more than just a fork; it is a comprehensive rewrite that adheres to the newest standards and Chrome Extension Manifest V3, ensuring both compliance and enhanced security.
 
@@ -44,7 +44,7 @@ Experimental support is also available. See key considerations for users [here](
 
 > - [About](#about)
 > - [Installation](#installation)
->   - [Chrome Extension](#chrome-extension)
+>   - [Browser Extension](#browser-extension)
 >   - [Emacs Integration](#emacs-integration)
 >     - [With use-package and straight.el](#with-use-package-and-straightel)
 >     - [Manual Installation](#manual-installation)
@@ -69,9 +69,9 @@ Experimental support is also available. See key considerations for users [here](
 
 # Installation
 
-## Chrome Extension
+## Browser Extension
 
-Install the [Chrome extension](https://chromewebstore.google.com/detail/chrome-emacs/dabdpcafiblbndpoadckibiaojbdnpjg).
+Install the [Chrome Extension](https://chromewebstore.google.com/detail/chrome-emacs/dabdpcafiblbndpoadckibiaojbdnpjg) or [Firefox add-on](https://addons.mozilla.org/en-US/firefox/addon/chrome-emacs) (Note: the Firefox add-on is currently under review.).
 
 ## Emacs Integration
 
