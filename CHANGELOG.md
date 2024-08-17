@@ -1,5 +1,13 @@
 # Changelog
 
+## Version 0.5.0 (UNPUBLISHED)
+
+- Added support for Firefox.
+- Updated build scripts and GitHub Actions workflow to handle builds and releases for both Chrome and Firefox versions.
+- Improved handling and copying of icons using `copy-webpack-plugin`.
+- Refactored `webpack.config.js` to dynamically set the target (Chrome or Firefox) and copy appropriate assets.
+- Minor improvements and bug fixes.
+
 ## Version 0.4.0 (2024-04-18)
 
 - Added an options page, which allows users to configure which letters to use for hints and exit keybindings.
