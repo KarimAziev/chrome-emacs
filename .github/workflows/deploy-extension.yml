@@ -1,4 +1,5 @@
-name: Build, Release, and Publish Chrome Extension
+name: Build, Release, and Publish Chrome and Firefox Extensions
+
 on:
   workflow_dispatch:
     inputs:
@@ -19,14 +20,14 @@ on:
   push:
     branches:
       - main
+
 env:
-  DIRECTORY: chrome
   PROJECT_NAME: chrome-emacs
 
 jobs:
   RunTests:
-   runs-on: ubuntu-latest
-   steps:
+    runs-on: ubuntu-latest
+    steps:
       - uses: actions/checkout@v4
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -36,6 +37,7 @@ jobs:
         run: npm ci
       - name: Run Test Suite
         run: npm run test
+
   PrepareBuildAndZip:
     needs: [RunTests]
     runs-on: ubuntu-latest
@@ -56,7 +58,7 @@ jobs:
         id: update-version
         run: |
           VERSION_FILE=version.env
-          CURRENT_VERSION=$(jq -r '.version' $DIRECTORY/manifest.json)
+          CURRENT_VERSION=$(jq -r '.version' chrome/manifest.json)
           echo "OLD_VERSION=$CURRENT_VERSION" >> $GITHUB_OUTPUT
 
           MANUAL_VERSION_TYPE="${{ github.event.inputs.versionType }}"
@@ -87,47 +89,63 @@ jobs:
           fi
 
           echo "New version: $NEW_VERSION"
-          jq --arg v "$NEW_VERSION" '.version = $v' $DIRECTORY/manifest.json > temp.json && mv temp.json $DIRECTORY/manifest.json
+          jq --arg v "$NEW_VERSION" '.version = $v' chrome/manifest.json > temp.json && mv temp.json chrome/manifest.json
+          jq --arg v "$NEW_VERSION" '.version = $v' firefox/manifest.json > temp.json && mv temp.json firefox/manifest.json
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
           echo "NEW_VERSION=$NEW_VERSION" >> $VERSION_FILE
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
 
           # Check if there are any changes
-          if git diff --quiet --exit-code $DIRECTORY/manifest.json; then
+          if git diff --quiet --exit-code chrome/manifest.json && git diff --quiet --exit-code firefox/manifest.json; then
             echo "No changes in manifest.json. Skipping commit and push."
           else
             # If there are changes, configure git, commit, and push
             git config user.name "github-actions"
             git config user.email "github-actions@github.com"
-            git add $DIRECTORY/manifest.json
+            git add chrome/manifest.json firefox/manifest.json
             git commit -m "Increment version to $NEW_VERSION"
             git push
           fi
       - name: Build the project
         run: npm run build
-      - name: Zip the app directory for release
+      - name: Zip the Chrome app directory for release
         run: |
-          cd ${{ env.DIRECTORY }}
-          ZIP_NAME="release-${{ env.NEW_VERSION }}.zip"
+          cd chrome
+          ZIP_NAME="chrome-release-${{ steps.update-version.outputs.NEW_VERSION }}.zip"
           zip -r "../${ZIP_NAME}" ./*
-          echo "ZIPPED_FILE=${ZIP_NAME}" >> $GITHUB_ENV
+          echo "CHROME_ZIPPED_FILE=${ZIP_NAME}" >> $GITHUB_ENV
           cd ..
-
-      - name: Upload zipped app as artifact
+      - name: Zip the Firefox app directory for release
+        run: |
+          cd firefox
+          ZIP_NAME="firefox-release-${{ steps.update-version.outputs.NEW_VERSION }}.zip"
+          zip -r "../${ZIP_NAME}" ./*
+          echo "FIREFOX_ZIPPED_FILE=${ZIP_NAME}" >> $GITHUB_ENV
+          cd ..
+      - name: Upload Chrome zipped app as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-zip-${{ env.NEW_VERSION }}
-          path: ${{ github.workspace }}/${{ env.ZIPPED_FILE }}
+          name: chrome-release-zip-${{ steps.update-version.outputs.NEW_VERSION }}
+          path: ${{ github.workspace }}/${{ env.CHROME_ZIPPED_FILE }}
+      - name: Upload Firefox zipped app as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: firefox-release-zip-${{ steps.update-version.outputs.NEW_VERSION }}
+          path: ${{ github.workspace }}/${{ env.FIREFOX_ZIPPED_FILE }}
 
   CreateAndUploadRelease:
     needs: [PrepareBuildAndZip]
     runs-on: ubuntu-latest
     if: ${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION != needs.PrepareBuildAndZip.outputs.OLD_VERSION || github.event_name == 'workflow_dispatch' }}
     steps:
-      - name: Download zipped app artifact
+      - name: Download Chrome zipped app artifact
         uses: actions/download-artifact@v4
         with:
-          name: release-zip-${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION }}
+          name: chrome-release-zip-${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION }}
+      - name: Download Firefox zipped app artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: firefox-release-zip-${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION }}
       - name: Create or Update Release
         id: create-release
         uses: ncipollo/release-action@v1
@@ -137,5 +155,7 @@ jobs:
           name: Release ${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION }}
           draft: false
           prerelease: false
-          artifacts: "release-${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION }}.zip"
+          artifacts: |
+            chrome-release-${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION }}.zip
+            firefox-release-${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION }}.zip
           token: ${{ secrets.GITHUB_TOKEN }}
