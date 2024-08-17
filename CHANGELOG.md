@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 0.5.1 (UNPUBLISHED)
+
+- Reduced the keep-alive interval in Firefox to 5 seconds to prevent disconnection during idle periods.
+
 ## Version 0.5.0 (UNPUBLISHED)
 
 - Added support for Firefox.
