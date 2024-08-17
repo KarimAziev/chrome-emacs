@@ -125,7 +125,7 @@ jobs:
       - name: Zip the source code for submission
         run: |
           SOURCE_ZIP_NAME="source-code-${{ steps.update-version.outputs.NEW_VERSION }}.zip"
-          zip -r "${SOURCE_ZIP_NAME}" . -x ".git/*" -x ".github/*"
+          zip -r "${SOURCE_ZIP_NAME}" . -x ".git/*" -x ".github/*" -x "node_modules/*"
           echo "SOURCE_ZIPPED_FILE=${SOURCE_ZIP_NAME}" >> $GITHUB_ENV
       - name: Upload Chrome zipped app as artifact
         uses: actions/upload-artifact@v4
