@@ -17,8 +17,8 @@ const errorMessageByCode: {
   1006: `Failed to connect to server: <i>${WS_URL}</i>`,
 };
 
-// 10 seconds
-const KEEP_ALIVE_INTERVAL = 10 * 1000;
+// 5 seconds
+const KEEP_ALIVE_INTERVAL = 5000;
 
 const currentBrowser = process.env.BROWSER_TARGET;
 const shouldStartKeepAlive = currentBrowser === 'firefox';
