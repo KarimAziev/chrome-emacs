@@ -71,7 +71,7 @@ Experimental support is also available. See key considerations for users [here](
 
 ## Browser Extension
 
-Install the [Chrome Extension](https://chromewebstore.google.com/detail/chrome-emacs/dabdpcafiblbndpoadckibiaojbdnpjg) or [Firefox add-on](https://addons.mozilla.org/en-US/firefox/addon/chrome-emacs) (Note: the Firefox add-on is currently under review.).
+Install the [Chrome Extension](https://chromewebstore.google.com/detail/chrome-emacs/dabdpcafiblbndpoadckibiaojbdnpjg) or [Firefox add-on](https://addons.mozilla.org/en-US/firefox/addon/chrome-emacs).
 
 ## Emacs Integration
 
