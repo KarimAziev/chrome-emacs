@@ -106,6 +106,18 @@ Install the corresponding Emacs package from <a target="_blank" href="https://gi
   (atomic-chrome-start-server))
 ```
 
+### With use-package and elpaca
+
+```emacs-lisp
+(use-package atomic-chrome
+  :ensure (:host github :repo "KarimAziev/atomic-chrome" :branch "main")
+  :demand t
+  :commands (atomic-chrome-start-server)
+  :config
+  (setq-default atomic-chrome-extension-type-list '(atomic-chrome))
+  (atomic-chrome-start-server))
+```
+
 ### Manual Installation
 
 Download the source code and place it in your desired directory (e.g., `~/.emacs.d/atomic-chrome/`):
