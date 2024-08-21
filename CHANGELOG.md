@@ -1,5 +1,11 @@
 # Changelog
 
+## Version 0.5.2 (UNPUBLISHED)
+
+- Implemented a more native keep-alive mechanism for Firefox using the Alarms API to enhance the stability of background scripts.
+- Removed redundant keep-alive logic from the content script, centralizing it in the background script.
+- Updated the manifest to ensure appropriate permissions for the Alarms API in Firefox.
+
 ## Version 0.5.1 (2024-08-18)
 
 - Added support for Firefox.
