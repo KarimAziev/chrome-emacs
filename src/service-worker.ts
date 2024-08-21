@@ -1,5 +1,23 @@
 import { wsBridge } from '@/background-tools';
 
+const currentBrowser = process.env.BROWSER_TARGET;
+const isFirefox = currentBrowser === 'firefox';
+
+if (isFirefox) {
+  chrome.alarms.create('keepAliveAlarm', { periodInMinutes: 0.1 });
+
+  chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === 'keepAliveAlarm') {
+      // Perform a lightweight task to keep the service worker alive
+      chrome.runtime.getPlatformInfo((info) => {
+        console.log(
+          `Alarm triggered: keeping service worker alive. Platform info: ${info.os}`,
+        );
+      });
+    }
+  });
+}
+
 /**
  * Adds an event listener to the Chrome extension's action button (e.g., toolbar icon).
  * On click, it injects the 'content-script.js' into the current tab.
