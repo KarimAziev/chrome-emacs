@@ -18,7 +18,7 @@ class ElementReader {
   }
 
   static getCssSelectorsOfEditable() {
-    return 'textarea, [contenteditable], *[contenteditable=true], *[role=textbox], div.ace_cursor';
+    return 'textarea, [contenteditable], *[contenteditable=true], *[role=textbox], div.ace_cursor, .cke_contents, .ck-editor__editable';
   }
 
   private static getEditableElements() {

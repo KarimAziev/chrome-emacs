@@ -25,7 +25,8 @@
       "node",
       "events",
       "uuid",
-      "jest"
+      "jest",
+      "ckeditor4"
     ],
     "baseUrl": ".",
     "paths": {

@@ -150,3 +150,9 @@ export const estimateParent = <El extends Element>(elem: El) => {
   }
   return elem;
 };
+
+export function hasClassWithPrefix(element: HTMLElement, prefix: string) {
+  return Array.from(element.classList).some((className) =>
+    className.startsWith(prefix),
+  );
+}

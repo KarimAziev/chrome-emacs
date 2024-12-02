@@ -4,7 +4,8 @@ import {
   PostToInjectorPayloadMap,
   BaseInjectedPostType,
 } from '@/handlers/types';
-import { isString } from '@/util/guard';
+import { isString, isError } from '@/util/guard';
+import { messager } from '@/content-script-tools/message';
 
 /**
  * A base class for creating handlers that are injected into web pages.
@@ -27,8 +28,14 @@ export default class BaseInjectedHandler<Elem extends Element> {
    * Sets up the handler, loading necessary resources and binding change events.
    */
   async setup(): Promise<void> {
-    await this.load();
-    this.bindChange(() => this.postToInjector('change'));
+    try {
+      await this.load();
+      this.bindChange(() => this.postToInjector('change'));
+    } catch (error) {
+      if (isError(error)) {
+        messager.error(error.message, { title: 'Chrome Emacs Error:' });
+      }
+    }
   }
 
   /**
