@@ -4,6 +4,7 @@ import {
   formatKeyEventItem,
   KeyEventItem,
 } from '@/util/keyboard-util';
+import { isHTMLElement } from '@/util/guard';
 
 interface KeySequenceNode {
   children: Map<string, KeySequenceNode>;
@@ -26,6 +27,8 @@ export class KeyReader {
   private preventDefaults: boolean = false;
   private onPartialDone: KeyReaderParams['onPartialDone'];
   private onMismatch: KeyReaderParams['onMismatch'];
+  private keyboardTrapElem: HTMLTextAreaElement;
+  private origActiveElem: Element | null;
 
   constructor({
     keybindings,
@@ -44,6 +47,7 @@ export class KeyReader {
     this.onPartialDone = onPartialDone;
     this.root = this.initializeKeySequences(keyConfigs);
     this.currentNode = this.root;
+    this.keyboardTrapElem = document.createElement('textarea');
   }
 
   private stringifyKeySequence(obj: KeyEventItem) {
@@ -82,11 +86,34 @@ export class KeyReader {
   }
 
   public listen(): void {
-    document.addEventListener('keydown', this.handleKeydown);
+    this.origActiveElem = document.activeElement;
+    if (!this.keyboardTrapElem.isConnected) {
+      document.body.appendChild(this.keyboardTrapElem);
+    }
+    this.keyboardTrapElem.removeEventListener('keydown', this.handleKeydown);
+    this.keyboardTrapElem.style.position = 'fixed';
+    this.keyboardTrapElem.style.top = '0';
+    this.keyboardTrapElem.style.left = '0';
+    this.keyboardTrapElem.style.right = '0';
+    this.keyboardTrapElem.style.bottom = '0';
+    this.keyboardTrapElem.style.opacity = '0';
+    this.keyboardTrapElem.focus();
+    this.keyboardTrapElem.addEventListener('keydown', this.handleKeydown);
   }
 
   public cleanup(): void {
-    document.removeEventListener('keydown', this.handleKeydown);
+    this.keyboardTrapElem.removeEventListener('keydown', this.handleKeydown);
+    if (this.keyboardTrapElem.isConnected) {
+      this.keyboardTrapElem.remove();
+    }
+
+    if (
+      this.origActiveElem &&
+      this.origActiveElem.isConnected &&
+      isHTMLElement(this.origActiveElem)
+    ) {
+      this.origActiveElem.focus();
+    }
   }
 
   private handleKeydown = (event: KeyboardEvent): void => {
