@@ -1,6 +1,11 @@
 # Changelog
 
-## Version 0.5.2 (UNPUBLISHED)
+## Version 0.6.0 (UNPUBLISHED)
+
+- Added support for `CKEditor 4` and `CKEditor 5`. Introduced bidirectional editing functionality, though scroll synchronization remains unsupported.
+- Improved keyboard input handling for editable elements. Previously, hint key presses (used to navigate editable areas) could be intercepted by active elements such as rich text editors, resulting in missed actions. To resolve this, a temporary `textarea` mask is now dynamically positioned to intercept and handle hint keys correctly without interfering with the underlying editor.
+
+## Version 0.5.2 (2024-08-21)
 
 - Implemented a more native keep-alive mechanism for Firefox using the Alarms API to enhance the stability of background scripts.
 - Removed redundant keep-alive logic from the content script, centralizing it in the background script.
