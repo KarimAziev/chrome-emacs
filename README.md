@@ -38,6 +38,11 @@ Experimental support is also available. See key considerations for users [here](
 - ☑ [vscode.dev](https://vscode.dev/)
 - ☑ [codesandbox.io](https://codesandbox.io/)
 
+Basic support (without scroll synchronization) for some rich text editors is also included:
+
+- ☑ [CKEditor 4](https://ckeditor.com/ckeditor-4/)
+- ☑ [CKEditor 5](https://ckeditor.com/ckeditor-5/)
+
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 
 **Table of Contents**
