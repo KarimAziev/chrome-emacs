@@ -1,6 +1,6 @@
 # Changelog
 
-## Version 0.6.0 (UNPUBLISHED)
+## Version 0.6.0 (2024-12-02)
 
 - Added support for `CKEditor 4` and `CKEditor 5`. Introduced bidirectional editing functionality, though scroll synchronization remains unsupported.
 - Improved keyboard input handling for editable elements. Previously, hint key presses (used to navigate editable areas) could be intercepted by active elements such as rich text editors, resulting in missed actions. To resolve this, a temporary `textarea` mask is now dynamically positioned to intercept and handle hint keys correctly without interfering with the underlying editor.
