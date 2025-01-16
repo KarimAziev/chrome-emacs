@@ -1,6 +1,6 @@
 import BaseHandler from '@/handlers/base';
 import { CustomEventDispatcher } from '@/util/event-dispatcher';
-import { estimateParent, isValidHTML } from '@/util/dom';
+import { estimateParent, isValidHTML, hasClassWithPrefix } from '@/util/dom';
 import { LoadedOptions } from '@/handlers/types';
 import { VISUAL_ELEMENT_SELECTOR } from '@/handlers/config/const';
 
@@ -169,7 +169,8 @@ class ContentEditableHandler extends BaseHandler {
   static canHandle(elem: HTMLElement) {
     return (
       elem.isContentEditable &&
-      !Object.values(VISUAL_ELEMENT_SELECTOR).some((v) => elem.closest(v))
+      !Object.values(VISUAL_ELEMENT_SELECTOR).some((v) => elem.closest(v)) &&
+      !hasClassWithPrefix(elem, 'cke_')
     );
   }
 }

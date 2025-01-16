@@ -11,17 +11,20 @@ import {
 /**
  * Base handler class implementing `IHandler` interface.
  */
-export default class BaseHandler extends EventEmitter implements IHandler {
+export default class BaseHandler<Elem extends HTMLElement = HTMLElement>
+  extends EventEmitter
+  implements IHandler
+{
   public document: CustomDocument;
   public window: Window;
-  protected elem: HTMLElement;
+  elem: Elem;
 
   /**
    * Constructs a new BaseHandler instance.
    * @param elem - The HTMLElement to be handled.
    * @param contentEvents - The content events binder instance.
    */
-  constructor(elem: HTMLElement, contentEvents: IContentEventsBinder) {
+  constructor(elem: Elem, contentEvents: IContentEventsBinder) {
     super();
     if (!elem.ownerDocument) {
       throw new Error('The element must be within a document');

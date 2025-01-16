@@ -3,14 +3,65 @@ import { wsBridge } from '@/background-tools';
 const currentBrowser = process.env.BROWSER_TARGET;
 const isFirefox = currentBrowser === 'firefox';
 
-const handleTabAction = (tab: chrome.tabs.Tab) => {
+const handleTabAction = async (tab: chrome.tabs.Tab) => {
   if (!tab.id) {
     return;
   }
-  chrome.scripting.executeScript({
+
+  const frames = await chrome.scripting.executeScript<any, Promise<boolean>>({
     target: { tabId: tab.id, allFrames: true },
-    files: ['scripts/content-script.js'],
+    injectImmediately: true,
+    func: async () => {
+      try {
+        const { loadActiveElementHandler } = await import(
+          '@/util/loadActiveElement'
+        );
+        await loadActiveElementHandler();
+        return true;
+      } catch (error) {
+        return false;
+      }
+    },
   });
+
+  const found = frames.find((res) => res.result);
+
+  if (found) {
+    return;
+  }
+
+  const mainFrames = await chrome.scripting.executeScript<
+    any,
+    Promise<boolean>
+  >({
+    target: { tabId: tab.id },
+    injectImmediately: true,
+    func: async () => {
+      try {
+        const { ElementReader } = await import(
+          '@/content-script-tools/element-reader'
+        );
+        const len = ElementReader.getElems().length;
+        return len > 0;
+      } catch (error) {
+        return false;
+      }
+    },
+  });
+
+  if (mainFrames.find(({ result }) => result)) {
+    chrome.scripting.executeScript({
+      files: ['scripts/content-script.js'],
+      target: { tabId: tab.id },
+      injectImmediately: true,
+    });
+  } else {
+    await chrome.scripting.executeScript<any, Promise<number>>({
+      target: { tabId: tab.id, allFrames: true },
+      injectImmediately: true,
+      files: ['scripts/content-script.js'],
+    });
+  }
 };
 
 if (isFirefox) {
@@ -49,7 +100,7 @@ chrome.commands.onCommand.addListener(async (command) => {
     const activeTab = tabs.find((tab) => tab.active);
     if (activeTab?.id) {
       chrome.scripting.executeScript({
-        target: { tabId: activeTab.id, allFrames: true },
+        target: { tabId: activeTab.id },
         files: ['scripts/query-edit.js'],
       });
     }

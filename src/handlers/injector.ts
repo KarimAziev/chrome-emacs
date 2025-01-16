@@ -12,7 +12,9 @@ import { getCssSelector } from '@/util/dom';
 /**
  * A specialized handler extending BaseHandler for injecting and communicating with scripts.
  */
-export default class InjectorHandler extends BaseHandler {
+export default class InjectorHandler<
+  Elem extends HTMLElement = HTMLElement,
+> extends BaseHandler<Elem> {
   private name: string;
   private uuid: string;
   private _getValueCallback: ((payload: UpdateTextPayload) => void) | null;
@@ -23,11 +25,7 @@ export default class InjectorHandler extends BaseHandler {
    * @param contentEvents - The content events binder instance for the handler.
    * @param name - Identifier name used in communications.
    */
-  constructor(
-    elem: HTMLElement,
-    contentEvents: IContentEventsBinder,
-    name: string,
-  ) {
+  constructor(elem: Elem, contentEvents: IContentEventsBinder, name: string) {
     super(elem, contentEvents);
     this.name = name;
     this.uuid = uuidv4();

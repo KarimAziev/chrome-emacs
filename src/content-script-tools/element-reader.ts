@@ -123,17 +123,22 @@ class ElementReader {
     }
   }
 
-  public async readAndLoadElement(): Promise<void> {
+  public async readAndLoadElement(): Promise<boolean> {
     if (!document?.hasFocus()) {
-      return;
+      return false;
     }
 
     const hintItem = await this.readElement();
 
     if (hintItem) {
       await loadHandler(hintItem.value);
+      return true;
+    } else {
+      return false;
     }
   }
 }
+
+export { ElementReader };
 
 export default new ElementReader();

@@ -4,8 +4,7 @@ import { UpdateTextPayload, LoadedOptions } from '@/handlers/types';
 import { estimateParent, setSelectionRange } from '@/util/dom';
 import { VISUAL_ELEMENT_SELECTOR } from '@/handlers/config/const';
 
-class TextareaHandler extends BaseHandler {
-  elem: HTMLTextAreaElement;
+class TextareaHandler extends BaseHandler<HTMLTextAreaElement> {
   dispatcher!: CustomEventDispatcher<HTMLTextAreaElement>;
   /**
    * Sets a value to the textarea element and dispatches an 'input' event.

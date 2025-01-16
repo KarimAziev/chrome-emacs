@@ -6,8 +6,7 @@ import { VISUAL_ELEMENT_SELECTOR } from '@/handlers/config/const';
 /**
  * A handler for interacting with Monaco editor instances specifically.
  */
-class MonacoHandler extends InjectorHandler {
-  elem: HTMLTextAreaElement;
+class MonacoHandler extends InjectorHandler<HTMLTextAreaElement> {
   /**
    * Constructs a new instance of the MonacoHandler.
    * @param elem - The HTMLTextAreaElement to be managed.
