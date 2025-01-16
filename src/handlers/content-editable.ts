@@ -1,6 +1,6 @@
 import BaseHandler from '@/handlers/base';
 import { CustomEventDispatcher } from '@/util/event-dispatcher';
-import { estimateParent } from '@/util/dom';
+import { estimateParent, isValidHTML } from '@/util/dom';
 import { LoadedOptions } from '@/handlers/types';
 import { VISUAL_ELEMENT_SELECTOR } from '@/handlers/config/const';
 
@@ -127,15 +127,18 @@ class ContentEditableHandler extends BaseHandler {
     this.dispatcher.focus();
     this.dispatcher.beforeinput();
 
-    const htmlValue = value
-      .split('\n')
-      .map((v) => {
-        if (v.trim().length === 0) {
-          return '<br>';
-        }
-        return '<div>' + v + '</div>';
-      })
-      .join('');
+    const htmlValue = isValidHTML(value)
+      ? value
+      : value
+          .split('\n')
+          .map((v) => {
+            if (v.trim().length === 0) {
+              return '<br>';
+            }
+            return '<div>' + v + '</div>';
+          })
+          .join('');
+
     this.selectAllContent();
     this.replaceSelectedContent(htmlValue);
 

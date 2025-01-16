@@ -156,3 +156,11 @@ export function hasClassWithPrefix(element: HTMLElement, prefix: string) {
     className.startsWith(prefix),
   );
 }
+
+export function isValidHTML(htmlString: string): boolean {
+  const parser = new DOMParser();
+  const parsedDocument = parser.parseFromString(htmlString, 'text/html');
+
+  const htmlContent = parsedDocument.body.innerHTML.trim();
+  return htmlContent.length > 0 && htmlContent !== htmlString;
+}
