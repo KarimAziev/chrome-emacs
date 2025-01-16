@@ -51,7 +51,8 @@
     "scripting",
     "storage",
     "tabs",
-    "alarms"
+    "alarms",
+    "contextMenus"
   ],
   "host_permissions": [
     "http://*/*",
