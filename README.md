@@ -139,6 +139,32 @@ Add the downloaded directory to the load path and require it:
 
 ```emacs-lisp
 (use-package atomic-chrome
+  :init
+  (defvar km-atomic-chrome-first-frame-changed nil
+    "Non-nil if a frame focus change occurred after Emacs started.
+Tracks whether to defer `atomic-chrome' server startup until the first focus
+change.")
+  (defun km-atomic-chrome-run-server-after-focus-change (&rest _)
+    "Start Atomic Chrome server upon graphical frame focus change.
+
+In a terminal (`tty'), removes itself from `after-focus-change-function'.
+
+In a GUI, starts the server on the second focus change and removes itself
+afterward."
+    (let ((frame (selected-frame)))
+      (if (tty-top-frame frame)
+          (remove-function after-focus-change-function
+                           'km-atomic-chrome-run-server-after-focus-change)
+        (when (frame-parameter frame 'last-focus-update)
+          (if (not km-atomic-chrome-first-frame-changed)
+              (setq km-atomic-chrome-first-frame-changed t)
+            (remove-function after-focus-change-function
+                             'km-atomic-chrome-run-server-after-focus-change)
+            (require 'atomic-chrome)
+            (when (fboundp 'atomic-chrome-start-server)
+              (atomic-chrome-start-server)))))))
+  (add-function :after after-focus-change-function
+                'km-atomic-chrome-run-server-after-focus-change)
   :straight (atomic-chrome
              :type git
              :flavor nil
@@ -153,10 +179,11 @@ Add the downloaded directory to the load path and require it:
                   ("github.com" . gfm-mode)
                   ("gitlab.com" . gfm-mode)
                   ("leetcode.com" . typescript-ts-mode)
-                  ("codesandbox.io" . js-ts-mode)
                   ("typescriptlang.org" . typescript-ts-mode)
                   ("jsfiddle.net" . js-ts-mode)
                   ("w3schools.com" . js-ts-mode)))
+  (add-to-list 'atomic-chrome-create-file-strategy
+               '("~/repos/python-scratch" :extension ("py")))
   (add-to-list 'atomic-chrome-create-file-strategy
                '("~/repos/ts-scratch/src/" :extension
                  ("js" "ts" "tsx" "jsx" "cjs" "mjs"))))
