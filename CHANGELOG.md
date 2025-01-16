@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 0.7.0 (2025-01-17)
+
+- Added a context menu for editable elements.
+- Added support for `TinyMCE` and other iframe-based editors.
+
 ## Version 0.6.0 (2024-12-02)
 
 - Added support for `CKEditor 4` and `CKEditor 5`. Introduced bidirectional editing functionality, though scroll synchronization remains unsupported.

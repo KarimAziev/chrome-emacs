@@ -42,6 +42,7 @@ Basic support (without scroll synchronization) for some rich text editors is als
 
 - ☑ [CKEditor 4](https://ckeditor.com/ckeditor-4/)
 - ☑ [CKEditor 5](https://ckeditor.com/ckeditor-5/)
+- ☑ [TinyMCE](https://www.tiny.cloud) and other iframe-based editors.
 
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 
