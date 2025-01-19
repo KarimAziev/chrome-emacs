@@ -208,7 +208,7 @@ Ensure that Emacs is running with the [atomic-chrome fork](https://github.com/Ka
 
 1. Run `M-x atomic-chrome-start-server` in Emacs. This is needed only once.
 
-2. Focus on or select from detected editable text areas, text editors, or contenteditable elements in Chrome.
+2. Focus on or select from detected editable text areas, text editors, or contenteditable elements in Chrome. Alternatively, you can right-click on an editable element and choose "Edit with Chrome Emacs" from the context menu. However, the context menu is available only for simple text areas.
 
 ![Hints](./images/hints.png)
 
