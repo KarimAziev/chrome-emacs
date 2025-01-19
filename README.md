@@ -135,11 +135,14 @@ Add the downloaded directory to the load path and require it:
 
 </details>
 
-<details><summary> Show Emacs advanced configuration example
+<details><summary> Show Emacs advanced configuration example with deferred loading
   </summary>
+
+Below is an example configuration that demonstrates deferred (lazy) loading of `atomic-chrome`. The server's loading and startup are delayed until the first focus change of the Emacs frame (e.g., when you switch to the browser).
 
 ```emacs-lisp
 (use-package atomic-chrome
+  :defer t
   :init
   (defvar km-atomic-chrome-first-frame-changed nil
     "Non-nil if a frame focus change occurred after Emacs started.
@@ -148,10 +151,14 @@ change.")
   (defun km-atomic-chrome-run-server-after-focus-change (&rest _)
     "Start Atomic Chrome server upon graphical frame focus change.
 
-In a terminal (`tty'), removes itself from `after-focus-change-function'.
+For GUI sessions:
+- The server is started only on the second focus change event (the first one
+  is triggered immediately after Emacs starts).
+- After starting the server, this function removes itself from
+  `after-focus-change-function' to avoid further overhead.
 
-In a GUI, starts the server on the second focus change and removes itself
-afterward."
+In terminal (`tty') environments, it disables itself immediately since focus
+changes are not applicable."
     (let ((frame (selected-frame)))
       (if (tty-top-frame frame)
           (remove-function after-focus-change-function
@@ -176,18 +183,19 @@ afterward."
   (setq-default atomic-chrome-buffer-open-style 'frame)
   (setq-default atomic-chrome-auto-remove-file t)
   (setq-default atomic-chrome-url-major-mode-alist
-                '(("ramdajs.com" . js-ts-mode)
-                  ("github.com" . gfm-mode)
+                '(("github.com" . gfm-mode)
+                  ("us-east-2.console.aws.amazon.com" . yaml-ts-mode)
+                  ("ramdajs.com" . js-ts-mode)
                   ("gitlab.com" . gfm-mode)
                   ("leetcode.com" . typescript-ts-mode)
                   ("typescriptlang.org" . typescript-ts-mode)
                   ("jsfiddle.net" . js-ts-mode)
                   ("w3schools.com" . js-ts-mode)))
   (add-to-list 'atomic-chrome-create-file-strategy
-               '("~/repos/python-scratch" :extension ("py")))
-  (add-to-list 'atomic-chrome-create-file-strategy
                '("~/repos/ts-scratch/src/" :extension
-                 ("js" "ts" "tsx" "jsx" "cjs" "mjs"))))
+                 ("js" "ts" "tsx" "jsx" "cjs" "mjs")))
+  (add-to-list 'atomic-chrome-create-file-strategy
+               '("~/repos/python-scratch" :extension ("py"))))
 ```
 
 </details>
