@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 0.8.0 (2025-02-04)
+
+- Added support for `Slack` and other [Quill](https://quilljs.com/)-based editors.
+- Now, changes you make in `Slack` and similar rich-text environments include the full inner HTML markup. This means that when you edit text, any formatting you applied—such as bold, italic, or structured line breaks—is preserved exactly as displayed. Previously, only the plain text might have been captured, sometimes resulting in lost or altered formatting. With this update, you can expect a more consistent and faithful editing experience that mirrors what you see on screen.
+
 ## Version 0.7.0 (2025-01-17)
 
 - Added a context menu for editable elements.
