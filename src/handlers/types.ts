@@ -36,6 +36,16 @@ export interface MessageEventData {
   payload: UpdateTextPayload;
 }
 
+export interface MessageClickPayload {
+  selector?: string | string[];
+  innerText?: string | string[];
+}
+
+export interface MessageClickData {
+  type: 'clickElement';
+  payload: MessageClickPayload;
+}
+
 /**
  * Defines options for handler configuration.
  */

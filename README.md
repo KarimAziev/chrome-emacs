@@ -70,6 +70,7 @@ Basic support (without scroll synchronization) for some rich text editors is als
 >       - [From the Toolbar with a Pinned Icon](#from-the-toolbar-with-a-pinned-icon-1)
 >       - [From the Toolbar without a Pinned Icon](#from-the-toolbar-without-a-pinned-icon-1)
 >       - [From the Firefox Add-ons Manager](#from-the-firefox-add-ons-manager)
+>   - [Simulating Clicks](#simulating-clicks)
 > - [Development](#development)
 
 <!-- markdown-toc end -->
@@ -284,6 +285,10 @@ Click the "Extensions" puzzle piece icon on the toolbar, find Firefox Emacs in t
 Navigate to `about:addons`, find Firefox Emacs, click on the "Preferences" button.
 
 In the options popup, after making changes, remember to click on the "Save" button.
+
+## Simulating Clicks
+
+The Emacs command `atomic-chrome-send-click-command` allows you to instruct extension to execute click (for example, to click "Send" in Slack after editing) on the element specified in `atomic-chrome-click-rules-alist`. See more in the [atomic-chrome](https://github.com/KarimAziev/atomic-chrome?tab=readme-ov-file#simulated-clicks-via-custom-rules) documentation.
 
 # Development
 
