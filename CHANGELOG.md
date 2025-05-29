@@ -1,6 +1,6 @@
 # Changelog
 
-## Version 0.9.0 (UNPUBLISHED)
+## Version 0.9.0 (2025-05-25)
 
 - Added support for executing clicks on the elements defined by the user (for example, to click "Send" in Slack after editing). The list of allowed sites and elements' CSS selectors is described in the atomic-chrome [documentation](https://github.com/KarimAziev/atomic-chrome?tab=readme-ov-file#simulated-clicks-via-custom-rules).
 
