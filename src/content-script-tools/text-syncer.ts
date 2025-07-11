@@ -80,67 +80,15 @@ class TextSyncer {
    * @param payload - The payload containing CSS selector(s) and/or inner text(s).
    */
 
-  clickElement(_handler: IHandler, payload: MessageClickData['payload']) {
+  async clickElement(_handler: IHandler, payload: MessageClickData['payload']) {
     try {
-      const selectors = payload.selector
-        ? Array.isArray(payload.selector)
-          ? payload.selector
-          : [payload.selector]
-        : [];
-
-      const candidates: HTMLElement[] = [];
-      selectors.forEach((sel) => {
-        if (!sel) return;
-        document.querySelectorAll(sel).forEach((node) => {
-          if (node instanceof HTMLElement && !candidates.includes(node)) {
-            candidates.push(node);
-          }
-        });
+      await chrome.runtime.sendMessage({
+        type: 'simulate-click',
+        payload: {
+          selector: payload.selector,
+          innerText: payload.innerText,
+        },
       });
-
-      if (!candidates.length) {
-        messager.error('Element not found', { title: 'Chrome Emacs:' });
-        return;
-      }
-
-      let target: HTMLElement | undefined;
-
-      if (payload.innerText) {
-        const texts = Array.isArray(payload.innerText)
-          ? payload.innerText
-          : [payload.innerText];
-
-        let bestScore = 0;
-
-        candidates.forEach((el) => {
-          const elText = el.innerText || '';
-          let score = 0;
-
-          texts.forEach((searchText) => {
-            if (elText.includes(searchText)) {
-              score++;
-            }
-          });
-          if (score > bestScore) {
-            bestScore = score;
-            target = el;
-          }
-        });
-
-        if (!target) {
-          messager.error('No element matching innerText found', {
-            title: 'Chrome Emacs:',
-          });
-          return;
-        }
-      } else {
-        target = candidates[0];
-      }
-
-      if (target) {
-        const dispatcher = new CustomEventDispatcher(target);
-        dispatcher.click();
-      }
     } catch (error) {
       console.error(error);
       if (error instanceof Error) {

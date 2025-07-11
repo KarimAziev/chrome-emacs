@@ -1,4 +1,6 @@
 import { wsBridge } from '@/background-tools';
+import type { MessageClickPayload } from '@/handlers/types';
+import { simulateClick } from '@/content-script-tools/simulate-click';
 
 const currentBrowser = process.env.BROWSER_TARGET;
 const isFirefox = currentBrowser === 'firefox';
@@ -78,6 +80,22 @@ if (isFirefox) {
     }
   });
 }
+
+chrome.runtime.onMessage.addListener(async (message, sender) => {
+  if (message.type === 'simulate-click') {
+    const tabId = sender.tab && sender.tab.id;
+    if (!tabId) {
+      return;
+    }
+
+    await chrome.scripting.executeScript<[MessageClickPayload], void>({
+      target: { tabId: tabId, allFrames: true },
+      injectImmediately: true,
+      args: [message.payload],
+      func: simulateClick,
+    });
+  }
+});
 
 /**
  * Adds an event listener to the Chrome extension's action button (e.g., toolbar icon).
