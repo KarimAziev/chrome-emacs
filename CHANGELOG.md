@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 0.9.1 (2025-07-14)
+
+- Fixed simulated clicks for iframe environments. Previously, when using editors like TinyMCE embedded in iframes, simulated clicks would fail to locate elements outside the iframe, resulting in an "element not found" error. This update adjusts the search context to properly locate and click the intended button elements even when the editor is isolated within an iframe.
+
 ## Version 0.9.0 (2025-05-25)
 
 - Added support for executing clicks on the elements defined by the user (for example, to click "Send" in Slack after editing). The list of allowed sites and elements' CSS selectors is described in the atomic-chrome [documentation](https://github.com/KarimAziev/atomic-chrome?tab=readme-ov-file#simulated-clicks-via-custom-rules).
