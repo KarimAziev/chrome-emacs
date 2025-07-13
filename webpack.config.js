@@ -11,6 +11,7 @@ const baseConfig = {
     'service-worker': ['./src/service-worker.ts'],
     'content-script': ['./src/content-script.ts'],
     'query-edit': ['./src/query-edit.ts'],
+    'click-error': ['./src/content-script-tools/click-error.ts'],
     injected: ['./src/injected.ts'],
     options: ['./src/options/options.ts'],
   },

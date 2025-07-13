@@ -52,7 +52,8 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "scripts/injected.js"
+          "scripts/injected.js",
+          "scripts/click-error.js"
       ],
       "matches": [
         "http://*/*",

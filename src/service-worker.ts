@@ -1,6 +1,6 @@
 import { wsBridge } from '@/background-tools';
 import type { MessageClickPayload } from '@/handlers/types';
-import { simulateClick } from '@/content-script-tools/simulate-click';
+import { clickSimulator } from '@/content-script-tools/simulate-click';
 
 const currentBrowser = process.env.BROWSER_TARGET;
 const isFirefox = currentBrowser === 'firefox';
@@ -84,19 +84,44 @@ if (isFirefox) {
 chrome.runtime.onMessage.addListener(async (message, sender) => {
   if (message.type === 'simulate-click') {
     const tabId = sender.tab && sender.tab.id;
+
     if (!tabId) {
       return;
     }
 
-    await chrome.scripting.executeScript<[MessageClickPayload], void>({
+    const framesRated = await chrome.scripting.executeScript<
+      [MessageClickPayload, boolean],
+      number
+    >({
       target: { tabId: tabId, allFrames: true },
       injectImmediately: true,
-      args: [message.payload],
-      func: simulateClick,
+      args: [message.payload, false],
+      func: clickSimulator,
     });
+
+    const frames = framesRated.sort((a, b) => b.result - a.result);
+
+    const targetFrame = frames[0];
+
+    if (targetFrame && targetFrame.result > 0) {
+      await chrome.scripting.executeScript<
+        [MessageClickPayload, boolean],
+        void
+      >({
+        target: { tabId: tabId, frameIds: [targetFrame.frameId] },
+        injectImmediately: true,
+        args: [message.payload, true],
+        func: clickSimulator,
+      });
+    } else {
+      await chrome.scripting.executeScript({
+        files: ['scripts/click-error.js'],
+        target: { tabId: tabId, frameIds: [targetFrame.frameId] },
+        injectImmediately: true,
+      });
+    }
   }
 });
-
 /**
  * Adds an event listener to the Chrome extension's action button (e.g., toolbar icon).
  * On click, it injects the 'content-script.js' into the current tab.
