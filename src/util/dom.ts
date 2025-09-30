@@ -45,7 +45,7 @@ function getCssSelectorsOfEditable() {
 
 export const scrollToElementIfNotVisible = (elem: Element) => {
   if (!isElementVisible(elem)) {
-    elem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    elem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 };
 

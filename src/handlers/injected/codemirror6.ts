@@ -5,6 +5,12 @@ import { isNumber } from '@/util/guard';
 import { codeMirrorSearchLanguage } from '@/util/codemirror';
 import { CustomEventDispatcher } from '@/util/event-dispatcher';
 import { VISUAL_ELEMENT_SELECTOR } from '@/handlers/config/const';
+import type { TransactionSpec } from '@codemirror/state';
+import {
+  computeChangedFraction,
+  diffsToChanges,
+  runDiff,
+} from '@/util/diff-util';
 
 export type EditorView = import('@codemirror/view').EditorView;
 
@@ -17,13 +23,18 @@ interface CMContentElement extends HTMLDivElement {
   };
 }
 
+const initialDiffTimeout = 1.0;
+const maxRetryDocLength = 200_000;
+const smallRetryChangeRatio = 0.02;
+
 /**
  * A handler class for interacting with CodeMirror 6 editors within an injected context.
  */
 class InjectedCodeMirror6Handler extends BaseInjectedHandler<CMContentElement> {
   editor!: EditorView;
   dispatcher!: CustomEventDispatcher<CMContentElement>;
-
+  private _dispatch?: (...args: any[]) => unknown;
+  private dispatching = false;
   /**
    * Initializes the editor from the element's properties.
    */
@@ -31,9 +42,9 @@ class InjectedCodeMirror6Handler extends BaseInjectedHandler<CMContentElement> {
     if (!this.elem.cmView || !this.elem.cmView?.view?.state) {
       const parent = this.getVisualElement();
       if (parent) {
-        const found = Array.from(parent.querySelectorAll<HTMLElement>('*'))
-          .flat()
-          .find((el) => (el as CMContentElement).cmView?.view?.state);
+        const found = Array.from(
+          parent.querySelectorAll<HTMLElement>('*'),
+        ).find((el) => (el as CMContentElement).cmView?.view?.state);
 
         if (found) {
           this.elem = found as CMContentElement;
@@ -42,18 +53,16 @@ class InjectedCodeMirror6Handler extends BaseInjectedHandler<CMContentElement> {
     }
 
     this.dispatcher = new CustomEventDispatcher(this.elem);
-    this.dispatcher.click();
-    this.dispatcher.focus();
     this.editor = this.elem.cmView.view;
+
+    this.showCursor();
   }
   /**
    * Gets the current value (content) of the editor.
    * @returns The current content of the editor.
    */
   getValue(): string {
-    const fieldValue = this.editor.state.doc.toString();
-
-    return fieldValue;
+    return this.editor.state.doc.toString();
   }
 
   /**
@@ -64,29 +73,105 @@ class InjectedCodeMirror6Handler extends BaseInjectedHandler<CMContentElement> {
   setValue(text: string, options?: UpdateTextPayload): void {
     const selection = this.getSelection(options);
 
-    if (this.getValue() !== text) {
-      this.editor.dispatch({
-        changes: {
-          from: 0,
-          to: this.editor.state.doc.length,
-          insert: text,
-        },
-      });
+    const changes = this._getTextChanges(text);
+
+    if (selection || changes) {
+      this.dispatching = true;
     }
-
-    this.editor.focus();
-
     if (selection) {
       this.editor.dispatch({
         selection,
         userEvent: 'select',
         scrollIntoView: true,
+        ...changes,
       });
+    } else if (changes) {
+      this.editor.dispatch({ ...changes, userEvent: 'remote' });
     }
+
+    this.editor.focus();
+    this.dispatching = false;
 
     this.showCursor();
 
     this.dispatcher.change();
+  }
+
+  private _getTextChanges(
+    text: string,
+  ): Required<Pick<TransactionSpec, 'changes'>> | null {
+    const currText = this.getValue();
+    if (currText === text) {
+      return null;
+    }
+
+    if (!currText || !text) {
+      return {
+        changes: {
+          from: 0,
+          to: this.editor.state.doc.length,
+          insert: text,
+        },
+      };
+    }
+
+    const currTextLen = currText.length;
+
+    let [diffs, coarse, tookMs] = runDiff(currText, text, {
+      diffTimeout: initialDiffTimeout,
+    });
+
+    const timedOut = tookMs >= initialDiffTimeout * 1000;
+    const changedFraction = computeChangedFraction(diffs);
+
+    const shouldRetry =
+      coarse || (timedOut && changedFraction >= smallRetryChangeRatio);
+
+    if (shouldRetry && currTextLen <= maxRetryDocLength) {
+      [diffs, coarse, tookMs] = runDiff(currText, text, {
+        diffTimeout: initialDiffTimeout,
+      });
+      console.log(
+        'Chrome Emacs: diff retry took',
+        tookMs,
+        'ms',
+        'coarse',
+        coarse,
+      );
+    }
+
+    if (coarse && currTextLen > maxRetryDocLength) {
+      return {
+        changes: {
+          from: 0,
+          to: this.editor.state.doc.length,
+          insert: text,
+        },
+      };
+    }
+
+    const changes = diffsToChanges(diffs);
+
+    if (changes.length === 0) {
+      console.warn(
+        'Chrome-Emacs: No change chunks produced; falling back to full replace',
+      );
+      return {
+        changes: {
+          from: 0,
+          to: this.editor.state.doc.length,
+          insert: text,
+        },
+      };
+    }
+
+    return {
+      changes: changes.map((c) => ({
+        from: c.from,
+        to: c.to,
+        insert: c.insert,
+      })),
+    };
   }
 
   /**
@@ -161,6 +246,31 @@ class InjectedCodeMirror6Handler extends BaseInjectedHandler<CMContentElement> {
    */
   bindChange(f: () => void): void {
     this.editor?.dom.addEventListener('input', f);
+    this.dispatching = false;
+    this._dispatch = this.editor.dispatch;
+    Object.defineProperty(this.editor, 'dispatch', {
+      ...Object.getOwnPropertyDescriptor(this.editor, 'dispatch'),
+      value: (...args: any[]) => {
+        const res = this._dispatch!.apply(this.editor, args);
+        if (!this.dispatching) {
+          f();
+        }
+
+        return res;
+      },
+    });
+  }
+  public dispose(): void {
+    if (this._dispatch) {
+      Object.defineProperty(this.editor, 'dispatch', {
+        ...Object.getOwnPropertyDescriptor(this.editor, 'dispatch'),
+        value: this._dispatch,
+      });
+    }
+  }
+
+  onUnload() {
+    this.dispose();
   }
   /**
    * Removes a previously bound change listener from the editor's DOM element.
