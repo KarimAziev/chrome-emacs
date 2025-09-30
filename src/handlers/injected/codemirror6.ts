@@ -81,12 +81,12 @@ class InjectedCodeMirror6Handler extends BaseInjectedHandler<CMContentElement> {
     if (selection) {
       this.editor.dispatch({
         selection,
-        userEvent: 'select',
+        userEvent: 'chrome-emacs',
         scrollIntoView: true,
         ...changes,
       });
     } else if (changes) {
-      this.editor.dispatch({ ...changes, userEvent: 'remote' });
+      this.editor.dispatch({ ...changes, userEvent: 'chrome-emacs' });
     }
 
     this.editor.focus();
@@ -252,7 +252,12 @@ class InjectedCodeMirror6Handler extends BaseInjectedHandler<CMContentElement> {
       ...Object.getOwnPropertyDescriptor(this.editor, 'dispatch'),
       value: (...args: any[]) => {
         const res = this._dispatch!.apply(this.editor, args);
-        if (!this.dispatching) {
+        if (
+          !this.dispatching &&
+          args?.find(
+            (val) => val && val.changes && val.userEvent !== 'chrome-emacs',
+          )
+        ) {
           f();
         }
 
