@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 1.0.1 (UNPUBLISHED)
+
+- Fixed an issue that caused marked text to reset in Emacs when used in Overleaf and other CodeMirror 6 editors.
+
 ## Version 1.0.0 (UNPUBLISHED)
 
 - Add support for collaborative editing in `Overleaf` and other editors based on `CodeMirror 6`. Previously, only changes from Emacs were visible to other collaborators, it now works both ways-remote edits are now reflected in Emacs as well. The cursor positions of other collaborators are no longer reset after changes made by Emacs. ([#9 issue](https://github.com/KarimAziev/chrome-emacs/issues/9) and [atomic-chrome issue](https://github.com/KarimAziev/atomic-chrome/issues/9))
