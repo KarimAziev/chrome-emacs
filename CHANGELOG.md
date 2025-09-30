@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 1.0.0 (UNPUBLISHED)
+
+- Add support for collaborative editing in `Overleaf` and other editors based on `CodeMirror 6`. Previously, only changes from Emacs were visible to other collaborators, it now works both ways-remote edits are now reflected in Emacs as well. The cursor positions of other collaborators are no longer reset after changes made by Emacs. (#9 and [atomic-chrome issue](https://github.com/KarimAziev/atomic-chrome/issues/9))
+
 ## Version 0.9.1 (2025-07-14)
 
 - Fixed simulated clicks for iframe environments. Previously, when using editors like TinyMCE embedded in iframes, simulated clicks would fail to locate elements outside the iframe, resulting in an "element not found" error. This update adjusts the search context to properly locate and click the intended button elements even when the editor is isolated within an iframe.
