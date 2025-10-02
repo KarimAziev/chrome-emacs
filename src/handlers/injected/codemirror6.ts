@@ -66,10 +66,18 @@ class InjectedCodeMirror6Handler extends BaseInjectedHandler<CMContentElement> {
   }
 
   /**
-   * Sets the content of the editor with an optional selection and options.
+   * Set the editor content and optionally update the selection.
+   *
+   * This method computes an optimal set of text changes between the current
+   * document and the provided text, and dispatches a CodeMirror transaction.
+   *
+   * This is necessary to avoid resetting the cursor positions of other collaborators
+   * (e.g. on Overleaf).
+   *
    * @param text - The new content to set in the editor.
-   * @param options - Optional parameters for the update, including selections.
+   * @param options - Optional parameters for the update, including selection.
    */
+
   setValue(text: string, options?: UpdateTextPayload): void {
     const selection = this.getSelection(options);
 
@@ -96,6 +104,17 @@ class InjectedCodeMirror6Handler extends BaseInjectedHandler<CMContentElement> {
 
     this.dispatcher.change();
   }
+
+  /**
+   * Compute the CodeMirror transaction "changes" needed to transform the
+   * current document into the provided text.
+   *
+   *
+   * @param text - The target document text.
+   * @returns A TransactionSpec fragment containing the "changes" array, or null
+   *          when no changes are required.
+   * @private
+   */
 
   private _getTextChanges(
     text: string,
@@ -241,8 +260,12 @@ class InjectedCodeMirror6Handler extends BaseInjectedHandler<CMContentElement> {
   }
 
   /**
-   * Binds a change listener to the editor's DOM element.
-   * @param f - The function to execute when an input event occurs.
+   * Binds a change listener to the editor's DOM element and temporarily overrides
+   * CodeMirror's dispatch method, since that is the only way to subscribe to internal
+   * changes (e.g. changes made by other collaborators on Overleaf).
+   *
+   * @param f - The function to execute when an input event occurs or when a dispatch
+   *            containing code changes is performed.
    */
   bindChange(f: () => void): void {
     this.editor?.dom.addEventListener('input', f);
@@ -265,7 +288,11 @@ class InjectedCodeMirror6Handler extends BaseInjectedHandler<CMContentElement> {
       },
     });
   }
-  public dispose(): void {
+
+  /**
+   * Restores CodeMirror's original dispatch method.
+   */
+  dispose(): void {
     if (this._dispatch) {
       Object.defineProperty(this.editor, 'dispatch', {
         ...Object.getOwnPropertyDescriptor(this.editor, 'dispatch'),
