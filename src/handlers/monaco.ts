@@ -43,7 +43,8 @@ class MonacoHandler extends InjectorHandler<HTMLTextAreaElement> {
    */
   static canHandle(elem: HTMLTextAreaElement) {
     const enabled =
-      elem.tagName?.toLowerCase() === 'textarea' &&
+      (elem.tagName?.toLowerCase() === 'textarea' ||
+        elem.getAttribute('role')) &&
       elem.closest(VISUAL_ELEMENT_SELECTOR.monaco);
 
     return !!enabled;
