@@ -1,8 +1,8 @@
 # Changelog
 
-## Version 1.0.2 (UNPUBLISHED)
+## Version 1.0.2 (2025-10-02)
 
-- Chrome: Fixed an issue that caused marked text to reset in Emacs when used in Overleaf and other CodeMirror 6 editors.
+- Chrome: Same as [Version 1.0.0](#version-100-2025-10-01), but with fixes.
 
 ## Version 1.0.1 (2025-10-01)
 

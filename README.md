@@ -32,6 +32,7 @@ Chrome Emacs is compatible with almost all online editors, including:
 - ☑ [glitch.com](https://glitch.com/)
 - ☑ [plnkr.co](https://plnkr.co/)
 - ☑ [coderpad.io](https://coderpad.io/)
+- ☑ [Overleaf](https://www.overleaf.com/): collaboration also works on both sides.
 
 Experimental support is also available. See key considerations for users [here](https://github.com/KarimAziev/chrome-emacs/blob/main/docs/experimental-monaco-support.md):
 
