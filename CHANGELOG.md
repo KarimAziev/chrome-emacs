@@ -1,6 +1,6 @@
 # Changelog
 
-## Version 1.0.3 (Unpublished)
+## Version 1.0.3 (2025-10-03)
 
 - Fixed an issue with editors that use the latest Monaco (e.g., Coderpad), which prevented detection of the element to edit.
 
