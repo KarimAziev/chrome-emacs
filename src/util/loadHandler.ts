@@ -2,9 +2,7 @@ import { contentEvents, textSyncer } from '@/content-script-tools';
 import { IHandlerConstructor } from '@/handlers/types';
 import { scrollAndFocus } from '@/util/dom';
 
-export const loadHandler = (
-  item?: [IHandlerConstructor, HTMLTextAreaElement],
-) => {
+export const loadHandler = (item?: [IHandlerConstructor, HTMLElement]) => {
   if (!item) {
     return;
   }

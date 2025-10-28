@@ -89,6 +89,37 @@ main {
   }
 }
 
+.editable-inputs-option {
+  margin: var(--base-padding);
+
+  legend {
+    font-weight: 600;
+  }
+
+  .checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+
+      input[type='checkbox'] {
+        cursor: pointer;
+      }
+    }
+  }
+
+  .field-description {
+    margin: 0.25rem 0 0 1.75rem;
+    font-size: 0.75rem;
+    color: rgba(0, 0, 0, 0.6);
+  }
+}
+
 .invalid {
   input {
     border: 0.125rem solid var(--primary-color);

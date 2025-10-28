@@ -4,9 +4,41 @@ import { DebouncedWindowEventListener } from '@/util/debounced-event-listener';
 import { HintReader } from '@/content-script-tools/hint-reader';
 import type { IHandlerConstructor } from '@/handlers/types';
 import type { First } from '@/util/types';
-import { loadSettings } from '@/options/load-settings';
+import { VISUAL_ELEMENT_SELECTOR } from '@/handlers/config/const';
+import { RuntimeSettings } from '@/options/runtime-settings';
+import { ALLOWED_INPUT_TYPES } from '@/handlers/config/allowed-inputs';
 
 export type ElementValue = First<ReturnType<typeof ElementReader.getElems>>;
+
+const VISUAL_PARENT_SELECTORS = Object.values(VISUAL_ELEMENT_SELECTOR);
+
+const isInsideManagedVisualElement = (element: Element) =>
+  VISUAL_PARENT_SELECTORS.some((selector) => element.closest(selector));
+
+const isEligibleInput = (
+  element: Element,
+  allowVisibleInputs: boolean,
+): element is HTMLInputElement => {
+  if (!allowVisibleInputs || !(element instanceof HTMLInputElement)) {
+    return false;
+  }
+
+  if (element.disabled || element.readOnly) {
+    return false;
+  }
+
+  if (isInsideManagedVisualElement(element)) {
+    return false;
+  }
+
+  const type = (element.type || 'text').toLowerCase();
+
+  if (type === 'hidden') {
+    return false;
+  }
+
+  return ALLOWED_INPUT_TYPES.has(type);
+};
 
 class ElementReader {
   static getElems() {
@@ -23,20 +55,23 @@ class ElementReader {
 
   private static getEditableElements() {
     const selector = ElementReader.getCssSelectorsOfEditable();
-    let elements = ElementReader.getVisibleElements<HTMLTextAreaElement>(
-      function (e, v) {
-        if (
-          e.matches(selector) &&
-          e.getAttribute('contenteditable') !== 'false' &&
-          !(e as HTMLInputElement).disabled &&
-          !(e as HTMLInputElement).readOnly
-        ) {
-          v.push(e as HTMLTextAreaElement);
-        }
-      },
-    );
+    const { allowVisibleInputs } = RuntimeSettings.get();
 
-    return elements;
+    return ElementReader.getVisibleElements<HTMLElement>(function (element, v) {
+      if (
+        element.matches(selector) &&
+        element.getAttribute('contenteditable') !== 'false' &&
+        !(element as HTMLInputElement).disabled &&
+        !(element as HTMLInputElement).readOnly
+      ) {
+        v.push(element as HTMLElement);
+        return;
+      }
+
+      if (isEligibleInput(element, allowVisibleInputs)) {
+        v.push(element);
+      }
+    });
   }
 
   private static getVisibleElements<ResultElement extends Element>(
@@ -69,10 +104,7 @@ class ElementReader {
 
   private static getElemsWithHandlers() {
     const editableElems = ElementReader.getEditableElements();
-    const result: [
-      IHandlerConstructor<HTMLTextAreaElement>,
-      HTMLTextAreaElement,
-    ][] = [];
+    const result: [IHandlerConstructor<HTMLElement>, HTMLElement][] = [];
 
     for (let i = 0; i < editableElems.length; i++) {
       const el = editableElems[i];
@@ -89,7 +121,8 @@ class ElementReader {
   public async readElement(): Promise<
     First<ReturnType<typeof ElementReader.getElems>> | undefined
   > {
-    const settings = await loadSettings();
+    await RuntimeSettings.ensureLoaded();
+    const settings = RuntimeSettings.get();
 
     const hintInstance = new HintReader({
       characters: settings.hints,

@@ -8,4 +8,5 @@ export const defaultKeySettings: Record<string, string[]> = {
 export const defaultSettings = {
   hints: DEFAULT_HINTS,
   keybindings: defaultKeySettings,
+  allowVisibleInputs: false,
 };

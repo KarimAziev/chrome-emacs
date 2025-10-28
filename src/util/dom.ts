@@ -121,7 +121,7 @@ export const normalizeRect = (rect?: DOMRect) => {
 };
 
 export function setSelectionRange(
-  textarea: HTMLTextAreaElement,
+  textarea: HTMLTextAreaElement | HTMLInputElement,
   selectionStart: number,
   selectionEnd: number,
 ) {

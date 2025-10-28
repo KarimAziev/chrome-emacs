@@ -8,7 +8,8 @@ export const loadSettings = async () => {
     return Object.entries(settings).reduce(
       (acc, [key, value]) => {
         if (value) {
-          acc[key as keyof typeof defaultSettings] = value;
+          const typed_key = key as keyof typeof defaultSettings;
+          acc[typed_key] = value as never;
         }
         return acc;
       },

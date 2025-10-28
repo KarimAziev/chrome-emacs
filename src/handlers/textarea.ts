@@ -34,6 +34,7 @@ class TextareaHandler extends BaseHandler<HTMLTextAreaElement> {
       return;
     }
     const { start, end } = selections[0];
+
     setSelectionRange(this.elem, start, end);
 
     if (start === end) {

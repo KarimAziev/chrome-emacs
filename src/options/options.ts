@@ -12,6 +12,7 @@ import {
   defaultKeySettings,
   READONLY_KEY,
   DEFAULT_HINTS,
+  defaultSettings,
 } from '@/options/defaults';
 
 const commandsToOptions = (
@@ -89,17 +90,72 @@ const pairsToConfig = (fields: Fields) =>
     {} as Record<string, string[]>,
   );
 
+const createVisibleInputsFieldset = (checked: boolean) => {
+  const fieldset = document.createElement('fieldset');
+  fieldset.className = 'editable-inputs-option';
+
+  const legend = document.createElement('legend');
+  legend.innerText = 'Editable Elements';
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'checkbox-field';
+
+  const label = document.createElement('label');
+  label.htmlFor = 'allowVisibleInputs';
+
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.id = 'allowVisibleInputs';
+  checkbox.name = 'allowVisibleInputs';
+  checkbox.checked = checked;
+
+  const labelText = document.createElement('span');
+  labelText.textContent =
+    'Treat visible text and password inputs as editable areas';
+
+  label.appendChild(checkbox);
+  label.appendChild(labelText);
+
+  const note = document.createElement('p');
+  note.className = 'field-description';
+  note.textContent =
+    'Leave disabled to rely on specialized handlers (Monaco, CodeMirror, CKEditor, etc.).';
+
+  wrapper.appendChild(label);
+  fieldset.appendChild(legend);
+  fieldset.appendChild(wrapper);
+  fieldset.appendChild(note);
+
+  return { fieldset, checkbox };
+};
+
 const initOptions = async () => {
   const keybindingsConfig = await loadSettings();
+  const form = document.querySelector<HTMLFormElement>('#optionsForm');
+
+  if (!form) {
+    return;
+  }
+
+  const { fieldset, checkbox: allowInputsCheckbox } =
+    createVisibleInputsFieldset(
+      typeof keybindingsConfig.allowVisibleInputs === 'boolean'
+        ? keybindingsConfig.allowVisibleInputs
+        : defaultSettings.allowVisibleInputs,
+    );
+
+  form.appendChild(fieldset);
+
   const [initialFields, defaultPair] = commandsToOptions(
     keybindingsConfig.keybindings || defaultKeySettings,
   );
-  new DynamicForm({
+  const dynamicForm = new DynamicForm({
     fields: initialFields,
     hints: keybindingsConfig.hints,
     defaultPair,
     onReset: () => {
       const [defFields, defPair] = commandsToOptions(defaultKeySettings);
+      allowInputsCheckbox.checked = defaultSettings.allowVisibleInputs;
       return {
         fields: defFields,
         defaultPair: defPair,
@@ -108,11 +164,14 @@ const initOptions = async () => {
     },
     onSave: async (fields, newhints?: string) => {
       const config = pairsToConfig(fields);
+      const hintsToPersist =
+        newhints ?? keybindingsConfig.hints ?? DEFAULT_HINTS;
 
       try {
         await chrome.storage.local.set({
           keybindings: config,
-          hints: newhints || keybindingsConfig.hints || DEFAULT_HINTS,
+          hints: hintsToPersist,
+          allowVisibleInputs: allowInputsCheckbox.checked,
         });
 
         window.close();
@@ -121,6 +180,12 @@ const initOptions = async () => {
       }
     },
   });
+
+  allowInputsCheckbox.addEventListener('change', () => {
+    dynamicForm.validateAll();
+  });
+
+  dynamicForm.validateAll();
 };
 
 if (document && document.readyState === 'complete') {

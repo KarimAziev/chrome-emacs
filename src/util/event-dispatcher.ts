@@ -32,6 +32,10 @@ export class CustomEventDispatcher<El extends HTMLElement> {
     this.dispatchAtomicChromeEvent('input', options);
   }
 
+  textInput(options?: InputEventInit) {
+    this.dispatchAtomicChromeEvent('textInput', options);
+  }
+
   keypress(options?: KeyboardEventInit) {
     this.dispatchAtomicChromeEvent('keypress', options);
   }

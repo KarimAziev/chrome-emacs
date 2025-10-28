@@ -40,9 +40,11 @@ const handleTabAction = async (tab: chrome.tabs.Tab) => {
     injectImmediately: true,
     func: async () => {
       try {
-        const { ElementReader } = await import(
-          '@/content-script-tools/element-reader'
-        );
+        const [{ ElementReader }, { RuntimeSettings }] = await Promise.all([
+          import('@/content-script-tools/element-reader'),
+          import('@/options/runtime-settings'),
+        ]);
+        await RuntimeSettings.ensureLoaded();
         const len = ElementReader.getElems().length;
         return len > 0;
       } catch (error) {
