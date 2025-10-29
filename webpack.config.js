@@ -14,6 +14,9 @@ const baseConfig = {
     'click-error': ['./src/content-script-tools/click-error.ts'],
     injected: ['./src/injected.ts'],
     options: ['./src/options/options.ts'],
+    'module/load-active-element-handler': [
+      './src/module-bridge/load-active-element-handler.ts',
+    ],
   },
   output: {
     filename: '[name].js',

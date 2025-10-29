@@ -18,7 +18,8 @@ export const loadActiveElementHandler = async () => {
   const handler = handlerFactory.handlerFor(activeEl);
 
   if (handler) {
-    return await loadHandler([handler, activeEl]);
+    await loadHandler([handler, activeEl]);
+    return true;
   } else {
     throw new Error('No handler');
   }

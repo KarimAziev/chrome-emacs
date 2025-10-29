@@ -2,12 +2,67 @@ import { wsBridge } from '@/background-tools';
 import type { MessageClickPayload } from '@/handlers/types';
 import { clickSimulator } from '@/content-script-tools/simulate-click';
 import { FORCE_VISIBLE_INPUTS_FLAG } from '@/options/runtime-settings';
+import { MODULE_REGISTRY_KEY } from '@/module-bridge/registry';
 
 const currentBrowser = process.env.BROWSER_TARGET;
 const isFirefox = currentBrowser === 'firefox';
 
 type HandleTabActionOptions = {
   forceAllowVisibleInputs?: boolean;
+};
+
+const LOAD_ACTIVE_ELEMENT_MODULE_PATH =
+  'scripts/module/load-active-element-handler.js';
+
+const executeModuleFunction = async <ResultType>(
+  target: chrome.scripting.InjectionTarget,
+  modulePath: string,
+  functionName: string,
+  args: unknown[] = [],
+) => {
+  await chrome.scripting.executeScript({
+    target,
+    files: [modulePath],
+    injectImmediately: true,
+  });
+
+  return chrome.scripting.executeScript<
+    [string, string, unknown[]],
+    Promise<ResultType>
+  >({
+    target,
+    injectImmediately: true,
+    func: async (registryKey, fnName, fnArgs) => {
+      const registry = Reflect.get(globalThis, registryKey as string) as
+        | Record<string, (...fnArgs: unknown[]) => unknown>
+        | undefined;
+
+      if (!registry) {
+        console.log(
+          `Chrome Emacs module registry "${registryKey as string}" missing`,
+        );
+        throw new Error(
+          `Chrome Emacs module registry "${registryKey as string}" missing`,
+        );
+      }
+
+      const fn = registry[fnName as string];
+
+      if (typeof fn !== 'function') {
+        console.log(
+          `Chrome Emacs module "${fnName as string}" is not available`,
+        );
+        throw new Error(
+          `Chrome Emacs module "${fnName as string}" is not available`,
+        );
+      }
+
+      const result = await fn(...(fnArgs || []));
+      console.log('Chrome emacs: result', result, 'fn', fn);
+      return result as ResultType;
+    },
+    args: [MODULE_REGISTRY_KEY, functionName, args],
+  });
 };
 
 const handleTabAction = async (
@@ -19,7 +74,6 @@ const handleTabAction = async (
   }
 
   const { forceAllowVisibleInputs = false } = options;
-  console.log('forceAllowVisibleInputs', forceAllowVisibleInputs);
   let overrideApplied = false;
 
   if (forceAllowVisibleInputs) {
@@ -27,7 +81,6 @@ const handleTabAction = async (
       target: { tabId: tab.id, allFrames: true },
       injectImmediately: true,
       func: (flagName: string) => {
-        console.log('flagName', flagName);
         Reflect.set(globalThis, flagName, true);
       },
       args: [FORCE_VISIBLE_INPUTS_FLAG],
@@ -35,24 +88,13 @@ const handleTabAction = async (
     overrideApplied = true;
   }
 
-  console.log('overrideApplied', overrideApplied);
-
   try {
-    const frames = await chrome.scripting.executeScript<any, Promise<boolean>>({
-      target: { tabId: tab.id, allFrames: true },
-      injectImmediately: true,
-      func: async () => {
-        try {
-          const { loadActiveElementHandler } = await import(
-            '@/util/loadActiveElement'
-          );
-          await loadActiveElementHandler();
-          return true;
-        } catch (error) {
-          return false;
-        }
-      },
-    });
+    const frames = await executeModuleFunction<boolean>(
+      { tabId: tab.id, allFrames: true },
+      LOAD_ACTIVE_ELEMENT_MODULE_PATH,
+      'loadActiveElementHandler',
+    );
+    console.log('frames after loadActiveElementHandler', frames);
 
     const found = frames.find((res) => res.result);
 

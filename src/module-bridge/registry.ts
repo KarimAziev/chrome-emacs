@@ -11,6 +11,7 @@ export const registerModuleFunction = (
   fn: (...args: unknown[]) => unknown,
 ) => {
   const global = globalThis as GlobalWithRegistry;
+  console.log('global', global?.origin);
   if (!global[MODULE_REGISTRY_KEY]) {
     global[MODULE_REGISTRY_KEY] = Object.create(null);
   }
