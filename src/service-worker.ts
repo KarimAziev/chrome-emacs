@@ -1,70 +1,110 @@
 import { wsBridge } from '@/background-tools';
 import type { MessageClickPayload } from '@/handlers/types';
 import { clickSimulator } from '@/content-script-tools/simulate-click';
+import { FORCE_VISIBLE_INPUTS_FLAG } from '@/options/runtime-settings';
 
 const currentBrowser = process.env.BROWSER_TARGET;
 const isFirefox = currentBrowser === 'firefox';
 
-const handleTabAction = async (tab: chrome.tabs.Tab) => {
+type HandleTabActionOptions = {
+  forceAllowVisibleInputs?: boolean;
+};
+
+const handleTabAction = async (
+  tab: chrome.tabs.Tab,
+  options: HandleTabActionOptions = {},
+) => {
   if (!tab.id) {
     return;
   }
 
-  const frames = await chrome.scripting.executeScript<any, Promise<boolean>>({
-    target: { tabId: tab.id, allFrames: true },
-    injectImmediately: true,
-    func: async () => {
-      try {
-        const { loadActiveElementHandler } = await import(
-          '@/util/loadActiveElement'
-        );
-        await loadActiveElementHandler();
-        return true;
-      } catch (error) {
-        return false;
-      }
-    },
-  });
+  const { forceAllowVisibleInputs = false } = options;
+  console.log('forceAllowVisibleInputs', forceAllowVisibleInputs);
+  let overrideApplied = false;
 
-  const found = frames.find((res) => res.result);
-
-  if (found) {
-    return;
-  }
-
-  const mainFrames = await chrome.scripting.executeScript<
-    any,
-    Promise<boolean>
-  >({
-    target: { tabId: tab.id },
-    injectImmediately: true,
-    func: async () => {
-      try {
-        const [{ ElementReader }, { RuntimeSettings }] = await Promise.all([
-          import('@/content-script-tools/element-reader'),
-          import('@/options/runtime-settings'),
-        ]);
-        await RuntimeSettings.ensureLoaded();
-        const len = ElementReader.getElems().length;
-        return len > 0;
-      } catch (error) {
-        return false;
-      }
-    },
-  });
-
-  if (mainFrames.find(({ result }) => result)) {
-    chrome.scripting.executeScript({
-      files: ['scripts/content-script.js'],
-      target: { tabId: tab.id },
-      injectImmediately: true,
-    });
-  } else {
-    await chrome.scripting.executeScript<any, Promise<number>>({
+  if (forceAllowVisibleInputs) {
+    await chrome.scripting.executeScript({
       target: { tabId: tab.id, allFrames: true },
       injectImmediately: true,
-      files: ['scripts/content-script.js'],
+      func: (flagName: string) => {
+        console.log('flagName', flagName);
+        Reflect.set(globalThis, flagName, true);
+      },
+      args: [FORCE_VISIBLE_INPUTS_FLAG],
     });
+    overrideApplied = true;
+  }
+
+  console.log('overrideApplied', overrideApplied);
+
+  try {
+    const frames = await chrome.scripting.executeScript<any, Promise<boolean>>({
+      target: { tabId: tab.id, allFrames: true },
+      injectImmediately: true,
+      func: async () => {
+        try {
+          const { loadActiveElementHandler } = await import(
+            '@/util/loadActiveElement'
+          );
+          await loadActiveElementHandler();
+          return true;
+        } catch (error) {
+          return false;
+        }
+      },
+    });
+
+    const found = frames.find((res) => res.result);
+
+    if (found) {
+      return;
+    }
+
+    const mainFrames = await chrome.scripting.executeScript<
+      any,
+      Promise<boolean>
+    >({
+      target: { tabId: tab.id },
+      injectImmediately: true,
+      func: async () => {
+        try {
+          const [{ ElementReader }, { RuntimeSettings }] = await Promise.all([
+            import('@/content-script-tools/element-reader'),
+            import('@/options/runtime-settings'),
+          ]);
+          await RuntimeSettings.ensureLoaded();
+          const len = ElementReader.getElems().length;
+          return len > 0;
+        } catch (error) {
+          return false;
+        }
+      },
+    });
+
+    if (mainFrames.find(({ result }) => result)) {
+      await chrome.scripting.executeScript({
+        files: ['scripts/content-script.js'],
+        target: { tabId: tab.id },
+        injectImmediately: true,
+      });
+    } else {
+      await chrome.scripting.executeScript<any, Promise<number>>({
+        target: { tabId: tab.id, allFrames: true },
+        injectImmediately: true,
+        files: ['scripts/content-script.js'],
+      });
+    }
+  } finally {
+    if (overrideApplied) {
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id, allFrames: true },
+        injectImmediately: true,
+        func: (flagName: string) => {
+          Reflect.deleteProperty(globalThis, flagName);
+        },
+        args: [FORCE_VISIBLE_INPUTS_FLAG],
+      });
+    }
   }
 };
 
@@ -167,12 +207,8 @@ chrome.contextMenus.onClicked.addListener(({ menuItemId }, tab) => {
   if (!tab) {
     return;
   }
-  const handlers: { [key: string]: (tab: chrome.tabs.Tab) => void } = {
-    ['chrome-emacs-edit']: handleTabAction,
-  };
-  const tabHandler = handlers[menuItemId];
 
-  if (tabHandler) {
-    tabHandler(tab);
+  if (menuItemId === 'chrome-emacs-edit') {
+    void handleTabAction(tab, { forceAllowVisibleInputs: true });
   }
 });

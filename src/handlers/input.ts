@@ -118,9 +118,7 @@ class InputHandler extends BaseHandler<HTMLInputElement> {
   }
 
   static canHandle(elem: HTMLInputElement) {
-    const settings = RuntimeSettings.get();
-
-    if (!settings.allowVisibleInputs) {
+    if (!RuntimeSettings.shouldAllowVisibleInputs()) {
       return false;
     }
 

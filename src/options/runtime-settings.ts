@@ -1,6 +1,32 @@
 import { defaultSettings } from '@/options/defaults';
 import { loadSettings } from '@/options/load-settings';
 
+export const FORCE_VISIBLE_INPUTS_FLAG = '__chromeEmacsForceAllowVisibleInputs';
+
+type ForceAllowVisibleInputsGlobal = typeof globalThis & {
+  __chromeEmacsForceAllowVisibleInputs?: boolean;
+};
+
+const hasForceAllowVisibleInputsOverride = () => {
+  if (typeof globalThis === 'undefined') {
+    return false;
+  }
+
+  return Boolean(
+    (globalThis as ForceAllowVisibleInputsGlobal)[FORCE_VISIBLE_INPUTS_FLAG],
+  );
+};
+
+const clearForceAllowVisibleInputsOverrideFlag = () => {
+  if (typeof globalThis === 'undefined') {
+    return;
+  }
+
+  delete (globalThis as ForceAllowVisibleInputsGlobal)[
+    FORCE_VISIBLE_INPUTS_FLAG
+  ];
+};
+
 export type RuntimeSettingsState = typeof defaultSettings;
 
 class RuntimeSettings {
@@ -49,6 +75,17 @@ class RuntimeSettings {
     }
 
     return this.loadPromise;
+  }
+
+  static shouldAllowVisibleInputs(): boolean {
+    return (
+      RuntimeSettings.get().allowVisibleInputs ||
+      hasForceAllowVisibleInputsOverride()
+    );
+  }
+
+  static clearForceAllowVisibleInputsOverride(): void {
+    clearForceAllowVisibleInputsOverrideFlag();
   }
 }
 

@@ -55,7 +55,7 @@ class ElementReader {
 
   private static getEditableElements() {
     const selector = ElementReader.getCssSelectorsOfEditable();
-    const { allowVisibleInputs } = RuntimeSettings.get();
+    const allowVisibleInputs = RuntimeSettings.shouldAllowVisibleInputs();
 
     return ElementReader.getVisibleElements<HTMLElement>(function (element, v) {
       if (

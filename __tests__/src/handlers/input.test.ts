@@ -18,6 +18,7 @@ describe('InputHandler.canHandle', () => {
     RuntimeSettings.merge({
       allowVisibleInputs: defaultSettings.allowVisibleInputs,
     });
+    RuntimeSettings.clearForceAllowVisibleInputsOverride();
   });
 
   it('returns false when visible inputs are disabled', () => {
@@ -41,6 +42,16 @@ describe('InputHandler.canHandle', () => {
     expect(InputHandler.canHandle(input)).toBe(true);
   });
 
+  it('allows inputs when forced override is present', () => {
+    const input = createInput('text');
+    RuntimeSettings.merge({ allowVisibleInputs: false });
+    (
+      globalThis as { __chromeEmacsForceAllowVisibleInputs?: boolean }
+    ).__chromeEmacsForceAllowVisibleInputs = true;
+
+    expect(InputHandler.canHandle(input)).toBe(true);
+  });
+
   it('allows password inputs when enabled', () => {
     const input = createInput('password');
     RuntimeSettings.merge({ allowVisibleInputs: true });
@@ -52,7 +63,7 @@ describe('InputHandler.canHandle', () => {
     const input = createInput('date');
     RuntimeSettings.merge({ allowVisibleInputs: true });
 
-    expect(InputHandler.canHandle(input)).toBe(true);
+    expect(InputHandler.canHandle(input)).toBe(false);
   });
 
   it('rejects inputs inside managed visual editors', () => {
