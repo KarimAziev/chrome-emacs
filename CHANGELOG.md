@@ -2,7 +2,7 @@
 
 ## Version 1.1.0 (UNRELEASED)
 
-- Added support for plain input editing. This feature is disabled by default but can be enabled in the options. The only exception is for context menus: manually opening the context menu on an input field will start an editing session.
+- Added support for plain input editing. This feature is disabled by default, but can be enabled in the options. The only exception is context menus: manually opening the context menu on an input field starts an editing session.
 
 ## Version 1.0.3 (2025-10-03)
 
