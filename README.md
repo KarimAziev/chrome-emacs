@@ -208,7 +208,7 @@ Ensure that Emacs is running with the [atomic-chrome fork](https://github.com/Ka
 
 2. Focus on or select from detected editable text areas, text editors, or contenteditable elements in Chrome. Alternatively, you can right-click on an editable element and choose "Edit with Chrome Emacs" from the context menu. However, the context menu is available only for simple text areas.
 
-![Hints](./images/hints.png)
+![Hints](./images/hints-usage.png)
 
 3. Activate Chrome Emacs. This can typically be done by clicking on the extension's icon or using a keyboard shortcut.
 
@@ -242,7 +242,7 @@ The text will now open in an Emacs buffer, ready for you to edit.
 
 In the options, you can enable or disable editing of plain inputs and configure which letters to use for hints and exit keybindings.
 
-![Options](./images/options.gif)
+![Options](./images/options-usage.gif)
 
 There are several ways to open the extension's options:
 
