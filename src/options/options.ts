@@ -110,8 +110,7 @@ const createVisibleInputsFieldset = (checked: boolean) => {
   checkbox.checked = checked;
 
   const labelText = document.createElement('span');
-  labelText.textContent =
-    'Treat visible text and password inputs as editable areas';
+  labelText.textContent = 'Treat visible plain inputs as editable areas';
 
   label.appendChild(checkbox);
   label.appendChild(labelText);
@@ -119,7 +118,7 @@ const createVisibleInputsFieldset = (checked: boolean) => {
   const note = document.createElement('p');
   note.className = 'field-description';
   note.textContent =
-    'Leave disabled to rely on specialized handlers (Monaco, CodeMirror, CKEditor, etc.).';
+    'When enabled, keybindings will work in visible text input fields.';
 
   wrapper.appendChild(label);
   fieldset.appendChild(legend);
