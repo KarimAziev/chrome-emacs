@@ -38,27 +38,21 @@ const executeModuleFunction = async <ResultType>(
         | undefined;
 
       if (!registry) {
-        console.log(
-          `Chrome Emacs module registry "${registryKey as string}" missing`,
-        );
-        throw new Error(
-          `Chrome Emacs module registry "${registryKey as string}" missing`,
-        );
+        const errMsg = `Chrome Emacs module registry "${registryKey as string}" missing`;
+        console.error(errMsg);
+        throw new Error(errMsg);
       }
 
       const fn = registry[fnName as string];
 
       if (typeof fn !== 'function') {
-        console.log(
-          `Chrome Emacs module "${fnName as string}" is not available`,
-        );
-        throw new Error(
-          `Chrome Emacs module "${fnName as string}" is not available`,
-        );
+        const errMsg = `Chrome Emacs module "${fnName as string}" is not available`;
+        console.error(errMsg);
+        throw new Error(errMsg);
       }
 
       const result = await fn(...(fnArgs || []));
-      console.log('Chrome emacs: result', result, 'fn', fn);
+
       return result as ResultType;
     },
     args: [MODULE_REGISTRY_KEY, functionName, args],
@@ -94,7 +88,6 @@ const handleTabAction = async (
       LOAD_ACTIVE_ELEMENT_MODULE_PATH,
       'loadActiveElementHandler',
     );
-    console.log('frames after loadActiveElementHandler', frames);
 
     const found = frames.find((res) => res.result);
 
