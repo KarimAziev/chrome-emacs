@@ -8,16 +8,15 @@
 
 This [Chrome Extension](https://chromewebstore.google.com/detail/chrome-emacs/dabdpcafiblbndpoadckibiaojbdnpjg) and [Firefox add-on](https://addons.mozilla.org/en-US/firefox/addon/chrome-emacs) are focused on bi-directional editing in online text editors and text areas from within Emacs.
 
-After the original Atomic Chrome extension was removed from the Chrome Web Store due to policy violations, I undertook the task of creating an entirely refreshed and compliant version. Now named "Chrome Emacs," it represents more than just a fork; it is a comprehensive rewrite that adheres to the newest standards and Chrome Extension Manifest V3, ensuring both compliance and enhanced security.
+After the original Atomic Chrome extension was removed from the Chrome Web Store due to policy violations, I undertook the task of creating an entirely new version. Now named "Chrome Emacs" it represents more than just a fork.
 
 Differences between the original and the forked package, as well as other similar packages, like [GhostText](https://github.com/fregante/GhostText/tree/main):
 
-- **Support for the Monaco Editor**: Expands the range of compatible online editors far beyond the original. Note, GhostText also supports the Monaco Editor but without position and scroll synchronization.
-- **Editable Areas Navigation with Hints**: Introduces a navigation feature where editable areas are overlaid with hints (letters). Pressing the corresponding letter key on the keyboard allows users to swiftly switch focus to those areas, enhancing usability and editing efficiency.
-- **Migration to Chrome Extension Manifest V3**: Guarantees that the extension stays compatible with the latest browser versions and meets current security standards.
 - **Cursor and Scroll Synchronization**: The motivation for this comes from the live-coding experience during online interviews. Unlike other solutions, it focuses not only on editing text areas but also on providing a seamless live-code experience in online editors.
 - **Auto-Major Mode Detection**: Automatically configures the most suitable editing mode for any given online editor.
-- **Complete Rewrite in TypeScript**: This enhances the extension's stability, maintainability, and performance.
+- **Support for the Monaco Editor**: Note, GhostText also supports the Monaco Editor but without position and scroll synchronization.
+- **Editable Areas Navigation with Hints**: A navigation feature where editable areas are overlaid with hints (letters). Pressing the corresponding letter key on the keyboard allows to swiftly switch focus to those areas.
+- **Support for plain inputs**: You can edit plain-text and numeric inputs, too. This feature is disabled by default except when triggered from the context menu. You can enable it in the [extension options](#extension-options)
 
 ![Demo](./chrome-emacs.gif)
 
@@ -46,8 +45,6 @@ Basic support (without scroll synchronization) for some rich text editors is als
 - ☑ [TinyMCE](https://www.tiny.cloud) and other iframe-based editors.
 - ☑ [Slack](https://slack.com/) and other [Quill](https://quilljs.com/)-based editors.
 
-<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
-
 **Table of Contents**
 
 > - [About](#about)
@@ -73,8 +70,6 @@ Basic support (without scroll synchronization) for some rich text editors is als
 >       - [From the Firefox Add-ons Manager](#from-the-firefox-add-ons-manager)
 >   - [Simulating Clicks](#simulating-clicks)
 > - [Development](#development)
-
-<!-- markdown-toc end -->
 
 # Installation
 
@@ -245,7 +240,7 @@ The text will now open in an Emacs buffer, ready for you to edit.
 
 ## Extension Options
 
-In the options, you can configure which letters to use for hints and exit keybindings.
+In the options, you can enable or disable editing of plain inputs and configure which letters to use for hints and exit keybindings.
 
 ![Options](./images/options.gif)
 
