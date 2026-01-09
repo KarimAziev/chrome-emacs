@@ -52,6 +52,7 @@ Basic support (without scroll synchronization) for some rich text editors is als
 >   - [Browser Extension](#browser-extension)
 >   - [Emacs Integration](#emacs-integration)
 >     - [With use-package and straight.el](#with-use-package-and-straightel)
+>     - [For Spacemacs users](#for-spacemacs-users)
 >     - [Manual Installation](#manual-installation)
 >     - [Run server](#run-server)
 > - [Usage](#usage)
@@ -108,6 +109,24 @@ Install the corresponding Emacs package from <a target="_blank" href="https://gi
   :config
   (setq-default atomic-chrome-extension-type-list '(atomic-chrome))
   (atomic-chrome-start-server))
+```
+
+### For Spacemacs users
+
+Add atomic-chrome to `dotspacemacs-additional-packages`:
+
+```emacs-lisp
+dotspacemacs-additional-packages '((atomic-chrome :location (recipe :fetcher github :repo "KarimAziev/atomic-chrome")))
+```
+
+Update `user-config` for atomic-chrome configuration:
+```emacs-lisp
+(defun dotspacemacs/user-config ()
+  (use-package atomic-chrome
+    :demand t
+    :config
+    (setq atomic-chrome-extension-type-list '(atomic-chrome))
+    (atomic-chrome-start-server)))
 ```
 
 ### Manual Installation
