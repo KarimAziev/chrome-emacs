@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 1.2.0 (UNPUBLISHED)
+
+- Improved `Overleaf` integration. In split view, double-clicking a location in the PDF now updates the location in Emacs as well. Also, switching to another file now updates Emacs with the new content.
+
 ## Version 1.1.0 (2025-11-07)
 
 - Added support for plain input editing. This feature is disabled by default, but can be enabled in the options. The only exception is context menus: manually opening the context menu on an input field starts an editing session.
