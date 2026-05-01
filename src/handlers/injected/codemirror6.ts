@@ -35,6 +35,7 @@ class InjectedCodeMirror6Handler extends BaseInjectedHandler<CMContentElement> {
   dispatcher!: CustomEventDispatcher<CMContentElement>;
   private _dispatch?: (...args: any[]) => unknown;
   private dispatching = false;
+
   /**
    * Initializes the editor from the element's properties.
    */
@@ -271,16 +272,16 @@ class InjectedCodeMirror6Handler extends BaseInjectedHandler<CMContentElement> {
     this.editor?.dom.addEventListener('input', f);
     this.dispatching = false;
     this._dispatch = this.editor.dispatch;
+
+    const pred = (val: any) =>
+      val && (val.changes || val.selection) && val.userEvent !== 'chrome-emacs';
+
     Object.defineProperty(this.editor, 'dispatch', {
       ...Object.getOwnPropertyDescriptor(this.editor, 'dispatch'),
       value: (...args: any[]) => {
         const res = this._dispatch!.apply(this.editor, args);
-        if (
-          !this.dispatching &&
-          args?.find(
-            (val) => val && val.changes && val.userEvent !== 'chrome-emacs',
-          )
-        ) {
+
+        if (!this.dispatching && args?.find(pred)) {
           f();
         }
 
