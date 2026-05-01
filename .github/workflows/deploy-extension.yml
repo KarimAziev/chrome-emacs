@@ -28,9 +28,9 @@ jobs:
   RunTests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: '.nvmrc'
       - name: Install dependencies
@@ -45,11 +45,11 @@ jobs:
       NEW_VERSION: ${{ steps.update-version.outputs.NEW_VERSION }}
       OLD_VERSION: ${{ steps.update-version.outputs.OLD_VERSION }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: '.nvmrc'
       - name: Install dependencies
@@ -136,17 +136,17 @@ jobs:
               -x "firefox/images/*"
           echo "SOURCE_ZIPPED_FILE=${SOURCE_ZIP_NAME}" >> $GITHUB_ENV
       - name: Upload Chrome zipped app as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: chrome-release-zip-${{ steps.update-version.outputs.NEW_VERSION }}
           path: ${{ github.workspace }}/${{ env.CHROME_ZIPPED_FILE }}
       - name: Upload Firefox zipped app as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: firefox-release-zip-${{ steps.update-version.outputs.NEW_VERSION }}
           path: ${{ github.workspace }}/${{ env.FIREFOX_ZIPPED_FILE }}
       - name: Upload source code zip as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: source-code-zip-${{ steps.update-version.outputs.NEW_VERSION }}
           path: ${{ github.workspace }}/${{ env.SOURCE_ZIPPED_FILE }}
@@ -157,15 +157,15 @@ jobs:
     if: ${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION != needs.PrepareBuildAndZip.outputs.OLD_VERSION || github.event_name == 'workflow_dispatch' }}
     steps:
       - name: Download Chrome zipped app artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: chrome-release-zip-${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION }}
       - name: Download Firefox zipped app artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: firefox-release-zip-${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION }}
       - name: Download source code zip artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: source-code-zip-${{ needs.PrepareBuildAndZip.outputs.NEW_VERSION }}
       - name: Create or Update Release

@@ -39,3 +39,4 @@ dist-ssr
 
 # Tests
 /coverage/
+/.agent-shell/
