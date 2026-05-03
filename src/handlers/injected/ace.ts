@@ -1,6 +1,7 @@
 import BaseInjectedHandler from '@/handlers/injected/base';
 import { UpdateTextPayload } from '@/handlers/types';
 import { isNumber } from '@/util/guard';
+import { ChangeChunk, getTextChangeChunks } from '@/util/diff-util';
 
 interface AceMode {
   mode: string;
@@ -88,10 +89,44 @@ class InjectedAceHandler extends BaseInjectedHandler<HTMLElement> {
 
   setValue(text: string, options?: UpdateTextPayload) {
     this.executeSilenced(() => {
-      this.editor.setValue(text, 1);
+      this.applyTextChanges(text);
       this.setPosition(options);
       this.setSelection(options);
     });
+  }
+
+  private _getTextChanges(text: string): ChangeChunk[] | null {
+    return getTextChangeChunks(this.getValue(), text);
+  }
+
+  private applyTextChanges(text: string): void {
+    const changes = this._getTextChanges(text);
+    if (!changes) {
+      return;
+    }
+
+    try {
+      const session = this.editor.getSession();
+      const Range = ace.require('ace/range').Range;
+
+      changes
+        .slice()
+        .reverse()
+        .forEach((change) => {
+          const start = session.doc.indexToPosition(change.from, 0);
+          const end = session.doc.indexToPosition(change.to, 0);
+          const range = new Range(
+            start.row,
+            start.column,
+            end.row,
+            end.column,
+          );
+
+          session.replace(range, change.insert);
+        });
+    } catch (_error) {
+      this.editor.setValue(text, 1);
+    }
   }
 
   private setFallbackSelection(options?: UpdateTextPayload) {

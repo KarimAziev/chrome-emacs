@@ -5,6 +5,7 @@ import { UpdateTextPayload } from '@/handlers/types';
 import { isNumber } from '@/util/guard';
 import { codeMirrorSearchLanguage } from '@/util/codemirror';
 import { VISUAL_ELEMENT_SELECTOR } from '@/handlers/config/const';
+import { ChangeChunk, getTextChangeChunks } from '@/util/diff-util';
 
 export interface CodeMirrorElement extends HTMLDivElement {
   CodeMirror: Editor;
@@ -26,13 +27,36 @@ class InjectedCodeMirror5Handler extends BaseInjectedHandler<CodeMirrorElement> 
 
   setValue(text: string, options?: UpdateTextPayload): void {
     this.executeSilenced(() => {
-      if (this.editor.getValue() !== text) {
-        this.editor.setValue(text);
-      }
+      this.applyTextChanges(text);
 
       this.editor?.focus();
       this.setPosition(options);
       this.setSelection(options?.selections);
+    });
+  }
+
+  private _getTextChanges(text: string): ChangeChunk[] | null {
+    return getTextChangeChunks(this.getValue(), text);
+  }
+
+  private applyTextChanges(text: string): void {
+    const changes = this._getTextChanges(text);
+    if (!changes) {
+      return;
+    }
+
+    this.editor.operation(() => {
+      changes
+        .slice()
+        .reverse()
+        .forEach((change) => {
+          this.editor.replaceRange(
+            change.insert,
+            this.editor.posFromIndex(change.from),
+            this.editor.posFromIndex(change.to),
+            '+chrome-emacs',
+          );
+        });
     });
   }
 

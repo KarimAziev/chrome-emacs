@@ -6,6 +6,7 @@ import { ElementEventMonitor } from '@/util/event-monitor';
 import { log } from '@/util/log';
 import { generateStringHash } from '@/util/string';
 import MonacoBase from '@/handlers/injected/monaco-base';
+import { ChangeChunk, getTextChangeChunks } from '@/util/diff-util';
 
 declare global {
   /**
@@ -36,7 +37,7 @@ class InjectedMonacoHandler extends MonacoBase {
    * The text model representing the content within the Monaco editor. This model provides
    * functionalities such as setting/getting value, observing changes etc.
    */
-  model: ExtendedModel | null;
+  model: ExtendedModel | null = null;
   /**
    * A reference to the currently focused Monaco code editor instance.
    * This is used for syncing the cursor position.
@@ -47,7 +48,11 @@ class InjectedMonacoHandler extends MonacoBase {
    * Stores a reference to the subscription for listening to text model content changes.
    * This allows for cleanup by calling its `dispose` method.
    */
-  changeListener?: IDisposable;
+  changeListeners: IDisposable[] = [];
+  changeHandler?: (...args: any[]) => void;
+  targetObserver?: MutationObserver;
+  targetRefreshScheduled = false;
+  targetId?: string;
 
   /**
    * Stores the original CSS `display` property of the `.monaco-editor` element to restore it upon cleanup.
@@ -74,25 +79,113 @@ class InjectedMonacoHandler extends MonacoBase {
     this.focusedEditor = focusedEditor;
   }
 
-  /**
-   * Retrieves the text model from a given URI. This method uses the editor's
-   * `getModel` method with the URI obtained from `getUri` to fetch the
-   * corresponding text model.
-   *
-   * @returns The text model associated with the given URI, or `undefined` if
-     the model cannot be retrieved.
-   */
-  private getModel() {
+  private getEditors() {
+    const editors =
+      isFunction(window.monaco?.editor?.getEditors) &&
+      window.monaco.editor.getEditors();
+
+    return Array.isArray(editors) ? editors : [];
+  }
+
+  private getModelByUri() {
     const uri = this.getUri() as unknown as editor.ITextModel['uri'];
-    if (!uri) {
+    if (!uri || !this.editor?.getModel) {
       return null;
     }
 
-    const model =
-      (this.editor?.getModel && this.editor?.getModel(uri)) ||
-      (this.focusedEditor as unknown as typeof editor)?.getModel(uri);
+    return this.editor.getModel(uri) as ExtendedModel | null;
+  }
 
-    return model as ExtendedModel;
+  private getCurrentEditorModel() {
+    const model = this.focusedEditor?.getModel?.();
+    return (model as ExtendedModel | null | undefined) || null;
+  }
+
+  private refreshActiveEditor() {
+    const uri = this.getUri();
+    const visual = this.getVisualElement();
+    const editors = this.getEditors();
+
+    const editorByDom =
+      visual &&
+      editors.find((candidate) => {
+        const domNode = candidate.getDomNode?.();
+        return !!domNode && (domNode === visual || visual.contains(domNode));
+      });
+
+    const editorByUri =
+      uri &&
+      editors.find(
+        (candidate) => candidate.getModel?.()?.uri?.toString() === uri,
+      );
+
+    this.focusedEditor = editorByDom || editorByUri || this.focusedEditor;
+
+    return this.focusedEditor;
+  }
+
+  private refreshModel() {
+    this.refreshActiveEditor();
+
+    const currentModel =
+      this.getCurrentEditorModel() || this.getModelByUri() || this.model;
+
+    this.model = currentModel || null;
+
+    return this.model;
+  }
+
+  private getTargetId() {
+    const editorId = this.focusedEditor?.getId?.() || '';
+    const modelId = this.model?.uri?.toString() || this.getUri() || '';
+
+    return editorId || modelId ? `${editorId}:${modelId}` : undefined;
+  }
+
+  private syncTargetListeners(notify = false) {
+    const previousTargetId = this.targetId;
+    this.refreshModel();
+    const nextTargetId = this.getTargetId();
+    const targetChanged = previousTargetId !== nextTargetId;
+
+    this.targetId = nextTargetId;
+
+    if (targetChanged && this.changeHandler) {
+      this.bindChange(this.changeHandler);
+
+      if (notify) {
+        this.wrapSilence(this.changeHandler)();
+      }
+    }
+
+    return targetChanged;
+  }
+
+  private observeTargetChanges() {
+    this.targetObserver?.disconnect();
+
+    if (!document.body) {
+      return;
+    }
+
+    this.targetObserver = new MutationObserver(() => {
+      if (this.targetRefreshScheduled) {
+        return;
+      }
+
+      this.targetRefreshScheduled = true;
+      queueMicrotask(() => {
+        this.targetRefreshScheduled = false;
+        this.syncTargetListeners(true);
+      });
+    });
+
+    this.targetObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['data-uri'],
+    });
   }
 
   /**
@@ -104,19 +197,14 @@ class InjectedMonacoHandler extends MonacoBase {
     return new Promise<void>((resolve) => {
       try {
         this.editor = window?.monaco?.editor;
-        this.model = this.getModel();
+        this.refreshModel();
+        this.targetId = this.getTargetId();
 
         if (this.editor) {
-          const editors =
-            isFunction(window.monaco.editor?.getEditors) &&
-            window.monaco.editor.getEditors();
+          const editors = this.getEditors();
 
-          if (Array.isArray(editors)) {
-            this.focusedEditor =
-              this.focusedEditor ||
-              editors?.find(
-                (e) => isFunction(e.getModel) && e.getModel() === this.model,
-              );
+          if (editors.length > 0) {
+            this.refreshActiveEditor();
           } else {
             this.hackMonaco();
           }
@@ -191,6 +279,7 @@ class InjectedMonacoHandler extends MonacoBase {
         automaticLayout: true,
         value,
       });
+      this.refreshModel();
 
       const injectedChild = Array.from(parent.childNodes).find(
         (child) => child !== el,
@@ -208,6 +297,8 @@ class InjectedMonacoHandler extends MonacoBase {
   }
 
   onUnload() {
+    this.unbindChange();
+
     if (this.focusedEditor) {
       try {
         this.focusedEditor.focus();
@@ -241,16 +332,72 @@ class InjectedMonacoHandler extends MonacoBase {
    */
   setValue(value: string, options?: UpdateTextPayload) {
     this.executeSilenced(() => {
-      const val = this.getValue();
-      if (isString(val) && val !== value) {
-        if (this.focusedEditor?.setValue) {
-          this.focusedEditor.setValue(value);
-        } else if (this.model) {
-          this.model.setValue(value);
-        }
-      }
+      this.refreshModel();
+      this.applyTextChanges(value);
       this.setPosition(options);
     });
+  }
+
+  private _getTextChanges(
+    value: string,
+  ): editor.IIdentifiedSingleEditOperation[] | null {
+    const model = this.refreshModel();
+    if (!model) {
+      return null;
+    }
+
+    const changes = getTextChangeChunks(this.getValue(), value);
+    if (!changes) {
+      return null;
+    }
+
+    return changes.map((change) => this.mapChangeToEdit(model, change));
+  }
+
+  private mapChangeToEdit(
+    model: ExtendedModel,
+    change: ChangeChunk,
+  ): editor.IIdentifiedSingleEditOperation {
+    const start = model.getPositionAt(change.from);
+    const end = model.getPositionAt(change.to);
+
+    return {
+      range: {
+        startLineNumber: start.lineNumber,
+        startColumn: start.column,
+        endLineNumber: end.lineNumber,
+        endColumn: end.column,
+      },
+      text: change.insert,
+      forceMoveMarkers: true,
+    };
+  }
+
+  private applyTextChanges(value: string): void {
+    const edits = this._getTextChanges(value);
+    if (!edits || edits.length === 0) {
+      return;
+    }
+
+    if (this.focusedEditor?.executeEdits) {
+      this.focusedEditor.pushUndoStop?.();
+      this.focusedEditor.executeEdits('chrome-emacs', edits);
+      this.focusedEditor.pushUndoStop?.();
+      return;
+    }
+
+    const model = this.model;
+
+    if (model?.pushEditOperations) {
+      model.pushStackElement?.();
+      model.pushEditOperations(null, edits, () => null);
+      model.pushStackElement?.();
+      return;
+    }
+
+    if (model && isString(value)) {
+      model.setValue(value);
+    }
   }
 
   /**
@@ -259,6 +406,7 @@ class InjectedMonacoHandler extends MonacoBase {
    * @param options - Options with position and selection data
    */
   private setPosition(options?: UpdateTextPayload) {
+    this.refreshModel();
     const lineNumber = options?.lineNumber;
     const column = options?.column;
 
@@ -292,6 +440,7 @@ class InjectedMonacoHandler extends MonacoBase {
   }
 
   private setSelection(selections: UpdateTextPayload['selections']) {
+    this.refreshModel();
     if (!selections) {
       return;
     }
@@ -337,6 +486,7 @@ class InjectedMonacoHandler extends MonacoBase {
    * @returns The current value as a string.
    */
   getValue() {
+    this.refreshModel();
     return this.focusedEditor?.getValue() || this.model?.getValue() || '';
   }
 
@@ -360,6 +510,7 @@ class InjectedMonacoHandler extends MonacoBase {
   }
 
   getPosition() {
+    this.refreshModel();
     const positionData =
       this.focusedEditor?.getPosition() || this.getFallbackPosition();
 
@@ -376,6 +527,7 @@ class InjectedMonacoHandler extends MonacoBase {
      determinable.
    */
   getExtension() {
+    this.refreshModel();
     const language = this.getModelLanguageId();
 
     const languages =
@@ -402,14 +554,45 @@ class InjectedMonacoHandler extends MonacoBase {
      containing the updated content as soon as the editor's content changes.
    */
   bindChange(f: (...args: any[]) => void) {
-    if (this.model?.onDidChangeContent) {
-      const contentChangeListener = this.model.onDidChangeContent((e) => {
-        if (!e.isFlush) {
-          this.wrapSilence(f)();
-        }
-      });
-      this.changeListener = contentChangeListener;
+    this.changeHandler = f;
+    this.unbindChange();
+    this.refreshModel();
+    this.targetId = this.getTargetId();
+
+    const notifyChange = this.wrapSilence(() => {
+      this.refreshModel();
+      f();
+    });
+
+    if (this.focusedEditor?.onDidChangeModelContent) {
+      this.changeListeners.push(
+        this.focusedEditor.onDidChangeModelContent((e) => {
+          if (!e.isFlush) {
+            notifyChange();
+          }
+        }),
+      );
+    } else if (this.model?.onDidChangeContent) {
+      this.changeListeners.push(
+        this.model.onDidChangeContent((e) => {
+          if (!e.isFlush) {
+            notifyChange();
+          }
+        }),
+      );
     }
+
+    if (this.focusedEditor?.onDidChangeModel) {
+      this.changeListeners.push(
+        this.focusedEditor.onDidChangeModel(() => {
+          if (!this.syncTargetListeners(true)) {
+            notifyChange();
+          }
+        }),
+      );
+    }
+
+    this.observeTargetChanges();
   }
 
   /**
@@ -418,9 +601,10 @@ class InjectedMonacoHandler extends MonacoBase {
    * will no longer invoke the callback function passed to `bindChange`.
    */
   unbindChange() {
-    if (this.changeListener?.dispose) {
-      this.changeListener.dispose();
-    }
+    this.changeListeners.forEach((listener) => listener.dispose?.());
+    this.changeListeners = [];
+    this.targetObserver?.disconnect();
+    this.targetObserver = undefined;
   }
 
   /**
