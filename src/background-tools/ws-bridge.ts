@@ -26,7 +26,12 @@ class WSBridge {
     port.onMessage.addListener((msg) => this.sendMessage(ws, queue, msg));
 
     port.onDisconnect.addListener(() => {
-      ws.close(1000);
+      if (
+        ws.readyState !== WebSocket.CLOSING &&
+        ws.readyState !== WebSocket.CLOSED
+      ) {
+        ws.close(1000);
+      }
     });
   }
 
@@ -42,20 +47,29 @@ class WSBridge {
 
     ws.onopen = () => {
       this.updateIcon(true);
-      this.startKeepAliveLoop();
-      while (queue.length > 0) {
-        ws.send(queue.shift() as string);
+      this.startKeepAliveLoop(ws);
+      while (queue.length > 0 && ws.readyState === WebSocket.OPEN) {
+        const queuedMessage = queue.shift() as string;
+        if (
+          !this.trySend(ws, queuedMessage, 'Failed to send queued message:')
+        ) {
+          break;
+        }
       }
     };
 
     ws.onmessage = (wsMsg: MessageEvent) => {
-      this.startKeepAliveLoop();
+      this.startKeepAliveLoop(ws);
       port.postMessage(JSON.parse(wsMsg.data));
     };
 
     ws.onclose = (evt: CloseEvent) => {
-      this.stopKeepAlive();
-      this.updateIcon(false);
+      if (this.webSocket === ws) {
+        this.stopKeepAlive();
+        this.updateIcon(false);
+        this.webSocket = null;
+      }
+
       const payload: ClosedMessagePayload = {
         code: evt.code,
         reason: evt.reason,
@@ -68,7 +82,6 @@ class WSBridge {
       });
 
       port.disconnect();
-      this.webSocket = null;
     };
 
     return ws;
@@ -89,20 +102,30 @@ class WSBridge {
    * runs at any given time. If the WebSocket connection is active, a 'keepalive'
    * message is sent; if sending fails, the keep-alive procedure is stopped.
    */
-  private startKeepAliveLoop(): void {
+  private startKeepAliveLoop(ws: WebSocket): void {
+    if (this.webSocket !== ws || ws.readyState !== WebSocket.OPEN) {
+      return;
+    }
+
     if (this.keepAliveIntervalId) {
       clearTimeout(this.keepAliveIntervalId);
     }
 
     this.keepAliveIntervalId = setTimeout(() => {
-      if (this.webSocket) {
-        try {
-          this.webSocket.send(JSON.stringify({ type: 'keepalive' }));
-          this.startKeepAliveLoop();
-        } catch (error) {
-          console.error('Failed to send keepalive message:', error);
-          this.stopKeepAlive();
-        }
+      if (this.webSocket !== ws) {
+        return;
+      }
+
+      const sent = this.trySend(
+        ws,
+        JSON.stringify({ type: 'keepalive' }),
+        'Failed to send keepalive message:',
+      );
+
+      if (sent) {
+        this.startKeepAliveLoop(ws);
+      } else {
+        this.stopKeepAlive();
       }
     }, KEEP_ALIVE_INTERVAL);
   }
@@ -128,11 +151,25 @@ class WSBridge {
     if (ws.readyState === WebSocket.CONNECTING) {
       queue.push(message);
     } else if (ws.readyState === WebSocket.OPEN) {
-      try {
-        ws.send(message);
-      } catch (error) {
-        console.error('Failed to send message:', error);
-      }
+      this.trySend(ws, message, 'Failed to send message:');
+    }
+  }
+
+  private trySend(
+    ws: WebSocket,
+    message: string,
+    errorMessage: string,
+  ): boolean {
+    if (ws.readyState !== WebSocket.OPEN) {
+      return false;
+    }
+
+    try {
+      ws.send(message);
+      return true;
+    } catch (error) {
+      console.error(errorMessage, error);
+      return false;
     }
   }
 
@@ -144,7 +181,13 @@ class WSBridge {
     if (this.webSocket === null) {
       return;
     }
-    this.webSocket.close();
+    if (
+      this.webSocket.readyState !== WebSocket.CLOSING &&
+      this.webSocket.readyState !== WebSocket.CLOSED
+    ) {
+      this.webSocket.close();
+    }
+    this.updateIcon(false);
     this.webSocket = null;
   }
 }
