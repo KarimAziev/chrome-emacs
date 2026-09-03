@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.3.0 (UNPUBLISHED)
+
+- Added file-switching support in Monaco and CodeMirror 6 editors, including platforms such as CoderPad and StackBlitz. Previously, stale files could override the original file.
+- Added support for undo/redo operations in Monaco and CodeMirror 5 editors; previously, this was available only in CodeMirror 6.
+
 ## Version 1.2.0 (2026-05-03)
 
 - Improved `Overleaf` integration. In split view, double-clicking a location in the PDF now updates the location in Emacs as well. Also, switching to another file now updates Emacs with the new content.
