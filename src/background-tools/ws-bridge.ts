@@ -1,6 +1,8 @@
 import type { ClosedMessagePayload } from '@/handlers/types';
 
-export const WS_PORT: number = 64292;
+export const WS_PORT: number = Number(
+  process.env.CHROME_EMACS_WS_PORT || 64292,
+);
 export const WS_URL: string = `ws://localhost:${WS_PORT}`;
 
 // 10 seconds

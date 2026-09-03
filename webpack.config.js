@@ -93,6 +93,9 @@ module.exports = (env, argv) => {
       new webpack.DefinePlugin({
         'process.env.DEBUG': JSON.stringify(isWatchMode),
         'process.env.BROWSER_TARGET': JSON.stringify(target),
+        'process.env.CHROME_EMACS_WS_PORT': JSON.stringify(
+          process.env.CHROME_EMACS_WS_PORT || '',
+        ),
       }),
       new CopyWebpackPlugin({
         patterns: [

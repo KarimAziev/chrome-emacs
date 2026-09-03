@@ -29,6 +29,7 @@
     "monaco-editor": "^0.53.0",
     "npm-run-all": "^4.1.5",
     "prettier": "^3.2.5",
+    "puppeteer-core": "^24.42.0",
     "rimraf": "^5.0.5",
     "sass": "^1.74.1",
     "sass-loader": "^14.1.1",
@@ -40,7 +41,8 @@
     "typescript": "^5.3.3",
     "webpack": "^5.52.1",
     "webpack-cli": "^4.8.0",
-    "webpack-merge": "^5.10.0"
+    "webpack-merge": "^5.10.0",
+    "ws": "^8.21.3"
   },
   "scripts": {
     "clean": "rimraf ./chrome/scripts ./firefox/scripts",
@@ -54,6 +56,8 @@
     "dev:firefox": "webpack --env target=firefox --watch",
     "dev": "npm-run-all --parallel dev:chrome dev:firefox",
     "test": "jest",
+    "pretest:e2e:chrome": "CHROME_EMACS_WS_PORT=64293 npm run build:chrome",
+    "test:e2e:chrome": "CHROME_EMACS_WS_PORT=64293 jest --testMatch '**/e2e/**/*.e2e.js' --testEnvironment=node --runInBand --testTimeout=30000",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
   },

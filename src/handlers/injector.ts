@@ -8,6 +8,7 @@ import {
   PostToInjectedPayloadMap,
 } from '@/handlers/types';
 import { getCssSelector } from '@/util/dom';
+import { getPostMessageTargetOrigin } from '@/util/post-message';
 
 /**
  * A specialized handler extending BaseHandler for injecting and communicating with scripts.
@@ -143,7 +144,7 @@ export default class InjectorHandler<
       payload: payload || {},
     };
 
-    this.window.postMessage(message, this.window.location.origin);
+    this.window.postMessage(message, getPostMessageTargetOrigin(this.window));
   }
 
   /**

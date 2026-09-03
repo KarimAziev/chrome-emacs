@@ -3,12 +3,19 @@ chrome/scripts/
 chrome/images/
 chrome/options.html
 chrome/*.zip
+/chrome-*.zip
+/source-code-*.zip
 
 # Firefox build artifacts
 firefox/scripts/
 firefox/images/
 firefox/options.html
 firefox/*.zip
+/firefox-*.zip
+
+# Local extension packaging scratch files
+/temp-chrome/
+/temp-chrome.*
 
 # Logs
 logs
