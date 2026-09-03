@@ -53,6 +53,9 @@ class InjectedMonacoHandler extends MonacoBase {
   targetObserver?: MutationObserver;
   targetRefreshScheduled = false;
   targetId?: string;
+  originalEditorElement?: HTMLDivElement;
+  originalEditorContainer?: HTMLElement;
+  private targetResolved = true;
 
   /**
    * Stores the original CSS `display` property of the `.monaco-editor` element to restore it upon cleanup.
@@ -87,13 +90,193 @@ class InjectedMonacoHandler extends MonacoBase {
     return Array.isArray(editors) ? editors : [];
   }
 
-  private getModelByUri() {
-    const uri = this.getUri() as unknown as editor.ITextModel['uri'];
-    if (!uri || !this.editor?.getModel) {
+  private getModelUri(model?: editor.ITextModel | null) {
+    try {
+      return model?.uri?.toString();
+    } catch (error) {
+      return '<unreadable>';
+    }
+  }
+
+  private describeElement(element?: Element | null) {
+    if (!element) {
       return null;
     }
 
-    return this.editor.getModel(uri) as ExtendedModel | null;
+    const htmlElement = element as HTMLElement;
+    const directMonacoChildren = Array.from(element.children)
+      .filter((child) => child.matches('.monaco-editor'))
+      .map((child) => {
+        const childElement = child as HTMLElement;
+
+        return {
+          className: childElement.className,
+          connected: childElement.isConnected,
+          display: childElement.style.display,
+          modeId: childElement.dataset.modeId,
+          role: childElement.getAttribute('role'),
+          uri: childElement.dataset.uri,
+        };
+      });
+
+    return {
+      tagName: element.tagName,
+      className: htmlElement.className,
+      connected: element.isConnected,
+      display: htmlElement.style.display,
+      keybindingContext: htmlElement.dataset.keybindingContext,
+      modeId: htmlElement.dataset.modeId,
+      role: element.getAttribute('role'),
+      uri: htmlElement.dataset.uri,
+      directMonacoChildren,
+    };
+  }
+
+  private getKnownModelUris() {
+    const monacoEditor = this.editor as typeof window.monaco.editor | undefined;
+    if (!isFunction(monacoEditor?.getModels)) {
+      return { count: 0, uris: [] as Array<string | undefined> };
+    }
+
+    const models = monacoEditor.getModels();
+    return {
+      count: models.length,
+      uris: models.slice(0, 25).map((model) => this.getModelUri(model)),
+    };
+  }
+
+  private logTarget(event: string, details: Record<string, unknown> = {}) {
+    if (!process.env.DEBUG) {
+      return;
+    }
+
+    const knownModels = this.getKnownModelUris();
+
+    log(
+      'monaco-target',
+      event,
+      JSON.stringify({
+        uuid: this.uuid,
+        hacked: !!this.originalEditorElement,
+        targetResolved: this.targetResolved,
+        targetId: this.targetId,
+        uriCandidates: this.getUriCandidates(),
+        handlerModelUri: this.getModelUri(this.model),
+        focusedEditorModelUri: this.getModelUri(this.getCurrentEditorModel()),
+        knownModelCount: knownModels.count,
+        knownModelUris: knownModels.uris,
+        originalEditor: this.describeElement(this.originalEditorElement),
+        originalContainer: this.describeElement(this.originalEditorContainer),
+        visualEditor: this.describeElement(this.getVisualElement()),
+        injectedEditor: this.describeElement(this.injectedEditorElement),
+        ...details,
+      }),
+    );
+  }
+
+  private getUriCandidates() {
+    const originalEditor = this.originalEditorElement;
+    const visualEditor = this.getVisualElement();
+    const values = [
+      originalEditor?.isConnected ? originalEditor.dataset?.uri : undefined,
+      originalEditor?.isConnected
+        ? originalEditor.closest<HTMLElement>('[data-uri]')?.dataset?.uri
+        : undefined,
+      this.originalEditorContainer?.dataset?.uri,
+      this.originalEditorContainer?.closest<HTMLElement>('[data-uri]')?.dataset
+        ?.uri,
+      visualEditor?.isConnected ? this.getUri() : undefined,
+    ];
+
+    return Array.from(new Set(values.filter(isString)));
+  }
+
+  private getModelByUri() {
+    if (!this.editor?.getModel) {
+      return null;
+    }
+
+    for (const uri of this.getUriCandidates()) {
+      const model = this.editor.getModel(
+        uri as unknown as editor.ITextModel['uri'],
+      ) as ExtendedModel | null;
+
+      if (model) {
+        return model;
+      }
+    }
+
+    return null;
+  }
+
+  private refreshInjectedEditorElement() {
+    const editorElement = this.focusedEditor?.getDomNode?.();
+    if (
+      editorElement instanceof HTMLDivElement &&
+      editorElement.isConnected &&
+      editorElement.parentElement === this.originalEditorContainer &&
+      editorElement.matches('.monaco-editor')
+    ) {
+      this.injectedEditorElement = editorElement;
+    }
+
+    return this.injectedEditorElement;
+  }
+
+  private refreshOriginalEditorElement() {
+    const container = this.originalEditorContainer;
+    const currentOriginal = this.originalEditorElement;
+    if (!container || !currentOriginal) {
+      return false;
+    }
+
+    const injectedEditor = this.refreshInjectedEditorElement();
+    if (currentOriginal.isConnected) {
+      return false;
+    }
+
+    const currentModelUri = this.getModelUri(this.getCurrentEditorModel());
+    const candidates = Array.from(
+      container.querySelectorAll<HTMLDivElement>(
+        ':scope > .monaco-editor[role="code"]',
+      ),
+    ).filter(
+      (candidate) =>
+        candidate !== injectedEditor &&
+        candidate !== currentOriginal &&
+        !!candidate.querySelector('textarea'),
+    );
+
+    const replacement =
+      candidates.find(
+        (candidate) =>
+          !!candidate.dataset.uri && candidate.dataset.uri !== currentModelUri,
+      ) || candidates[0];
+
+    if (!replacement) {
+      if (!currentOriginal.isConnected) {
+        this.targetResolved = false;
+      }
+      return false;
+    }
+
+    const replacementTextarea =
+      replacement.querySelector<HTMLTextAreaElement>('textarea');
+    if (!replacementTextarea) {
+      return false;
+    }
+
+    this.originalEditorElement = replacement;
+    this.originalDisplayStyle = replacement.style.display;
+    this.elem = replacementTextarea;
+    replacement.style.display = 'none';
+
+    this.logTarget('original-editor-replaced', {
+      previousOriginal: this.describeElement(currentOriginal),
+      replacementOriginal: this.describeElement(replacement),
+    });
+
+    return true;
   }
 
   private getCurrentEditorModel() {
@@ -124,18 +307,72 @@ class InjectedMonacoHandler extends MonacoBase {
     return this.focusedEditor;
   }
 
-  private refreshModel() {
+  private refreshModel(preferOriginalModel = false) {
     this.refreshActiveEditor();
 
-    const currentModel =
-      this.getCurrentEditorModel() || this.getModelByUri() || this.model;
+    if (this.originalEditorElement) {
+      if (preferOriginalModel) {
+        return this.refreshHackedTarget();
+      }
+
+      if (!this.targetResolved) {
+        return null;
+      }
+
+      const currentModel = this.getCurrentEditorModel() || this.model;
+      this.model = currentModel || null;
+      return this.model;
+    }
+
+    const currentEditorModel = this.getCurrentEditorModel();
+    const uriModel = this.getModelByUri();
+    const currentModel = currentEditorModel || uriModel || this.model;
 
     this.model = currentModel || null;
 
     return this.model;
   }
 
+  private getOriginalEditorModel() {
+    const uri = this.getUriCandidates().find(isString);
+    if (!uri || !this.editor?.getModel) {
+      return null;
+    }
+
+    return this.editor.getModel(
+      uri as unknown as editor.ITextModel['uri'],
+    ) as ExtendedModel | null;
+  }
+
+  private refreshHackedTarget() {
+    const model = this.getOriginalEditorModel();
+    if (!model) {
+      this.targetResolved = false;
+      this.logTarget('target-unresolved');
+      return null;
+    }
+
+    const currentModel = this.getCurrentEditorModel();
+    this.targetResolved = true;
+
+    if (model !== currentModel && this.focusedEditor?.setModel) {
+      this.logTarget('set-synthetic-model', {
+        fromModelUri: this.getModelUri(currentModel),
+        toModelUri: this.getModelUri(model),
+      });
+      this.focusedEditor.setModel(model);
+      this.refreshInjectedEditorElement();
+    }
+
+    this.model = model;
+    return this.model;
+  }
+
   private getTargetId() {
+    if (!this.targetResolved) {
+      return undefined;
+    }
+
     const editorId = this.focusedEditor?.getId?.() || '';
     const modelId = this.model?.uri?.toString() || this.getUri() || '';
 
@@ -144,16 +381,25 @@ class InjectedMonacoHandler extends MonacoBase {
 
   private syncTargetListeners(notify = false) {
     const previousTargetId = this.targetId;
-    this.refreshModel();
-    const nextTargetId = this.getTargetId();
+    const model = this.refreshModel(true);
+    const nextTargetId = model ? this.getTargetId() : undefined;
     const targetChanged = previousTargetId !== nextTargetId;
 
     this.targetId = nextTargetId;
 
+    this.logTarget('sync-target', {
+      notify,
+      previousTargetId,
+      nextTargetId,
+      targetChanged,
+      resolvedModelUri: this.getModelUri(model),
+      hasChangeHandler: !!this.changeHandler,
+    });
+
     if (targetChanged && this.changeHandler) {
       this.bindChange(this.changeHandler);
 
-      if (notify) {
+      if (notify && model) {
         this.wrapSilence(this.changeHandler)();
       }
     }
@@ -164,11 +410,38 @@ class InjectedMonacoHandler extends MonacoBase {
   private observeTargetChanges() {
     this.targetObserver?.disconnect();
 
-    if (!document.body) {
+    const observedElements = new Set(
+      [
+        this.originalEditorElement,
+        this.originalEditorContainer,
+        this.getVisualElement(),
+      ].filter((element): element is HTMLElement => !!element),
+    );
+
+    if (observedElements.size === 0) {
       return;
     }
 
-    this.targetObserver = new MutationObserver(() => {
+    this.targetObserver = new MutationObserver((records) => {
+      const originalEditorReplaced = this.refreshOriginalEditorElement();
+
+      this.logTarget('target-mutation', {
+        originalEditorReplaced,
+        records: records.map((record) => ({
+          type: record.type,
+          attributeName: record.attributeName,
+          target: this.describeElement(
+            record.target instanceof Element ? record.target : null,
+          ),
+          added: Array.from(record.addedNodes)
+            .filter((node): node is Element => node instanceof Element)
+            .map((node) => this.describeElement(node)),
+          removed: Array.from(record.removedNodes)
+            .filter((node): node is Element => node instanceof Element)
+            .map((node) => this.describeElement(node)),
+        })),
+      });
+
       if (this.targetRefreshScheduled) {
         return;
       }
@@ -180,11 +453,22 @@ class InjectedMonacoHandler extends MonacoBase {
       });
     });
 
-    this.targetObserver.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['data-uri'],
+    observedElements.forEach((element) => {
+      this.targetObserver?.observe(element, {
+        attributes: true,
+        attributeFilter: [
+          'data-keybinding-context',
+          'data-mode-id',
+          'data-uri',
+        ],
+        childList: element === this.originalEditorContainer,
+      });
+    });
+
+    this.logTarget('observer-attached', {
+      observedElements: Array.from(observedElements).map((element) =>
+        this.describeElement(element),
+      ),
     });
   }
 
@@ -197,6 +481,14 @@ class InjectedMonacoHandler extends MonacoBase {
     return new Promise<void>((resolve) => {
       try {
         this.editor = window?.monaco?.editor;
+        this.logTarget('load-start', {
+          api: {
+            create: isFunction(window?.monaco?.editor?.create),
+            getEditors: isFunction(window?.monaco?.editor?.getEditors),
+            getModel: isFunction(window?.monaco?.editor?.getModel),
+            getModels: isFunction(window?.monaco?.editor?.getModels),
+          },
+        });
         this.refreshModel();
         this.targetId = this.getTargetId();
 
@@ -204,8 +496,14 @@ class InjectedMonacoHandler extends MonacoBase {
           const editors = this.getEditors();
 
           if (editors.length > 0) {
+            this.logTarget('use-existing-editor', {
+              editorCount: editors.length,
+            });
             this.refreshActiveEditor();
           } else {
+            this.logTarget('use-hack-monaco', {
+              editorCount: editors.length,
+            });
             this.hackMonaco();
           }
 
@@ -216,7 +514,12 @@ class InjectedMonacoHandler extends MonacoBase {
             this.focusedEditor?.focus();
           }
         }
+
+        this.logTarget('load-complete');
       } catch (error) {
+        this.logTarget('load-error', {
+          error: error instanceof Error ? error.message : String(error),
+        });
         throw new Error('Monaco editor is not available.');
       } finally {
         return resolve();
@@ -258,6 +561,7 @@ class InjectedMonacoHandler extends MonacoBase {
   private hackMonaco() {
     const el = this.getVisualElement();
     if (!el) {
+      this.logTarget('hack-no-visual-element');
       return;
     }
 
@@ -266,7 +570,14 @@ class InjectedMonacoHandler extends MonacoBase {
 
     const parent = el?.parentElement;
 
+    this.logTarget('hack-start', {
+      candidateOriginalEditor: this.describeElement(el),
+      candidateContainer: this.describeElement(parent),
+    });
+
     if (parent) {
+      this.originalEditorElement = el;
+      this.originalEditorContainer = parent;
       this.originalDisplayStyle = el.style.display;
 
       el.style.display = 'none';
@@ -281,12 +592,16 @@ class InjectedMonacoHandler extends MonacoBase {
       });
       this.refreshModel();
 
-      const injectedChild = Array.from(parent.childNodes).find(
-        (child) => child !== el,
-      );
+      const injectedChild =
+        this.focusedEditor?.getDomNode?.() ||
+        Array.from(parent.children).find(
+          (child) => child !== el && child.matches('.monaco-editor'),
+        );
       if (injectedChild) {
         this.injectedEditorElement = injectedChild as HTMLDivElement;
       }
+
+      this.logTarget('hack-complete');
 
       if (position) {
         try {
@@ -331,8 +646,26 @@ class InjectedMonacoHandler extends MonacoBase {
    * @param options - Options to control the text update.
    */
   setValue(value: string, options?: UpdateTextPayload) {
+    const model = this.refreshModel();
+    if (!model) {
+      this.logTarget('write-rejected-no-target', {
+        incomingLength: value.length,
+        incomingHash: process.env.DEBUG
+          ? generateStringHash(value)
+          : '<debug-disabled>',
+      });
+      return;
+    }
+
+    this.logTarget('write-accepted', {
+      incomingLength: value.length,
+      incomingHash: process.env.DEBUG
+        ? generateStringHash(value)
+        : '<debug-disabled>',
+      writeModelUri: this.getModelUri(model),
+    });
+
     this.executeSilenced(() => {
-      this.refreshModel();
       this.applyTextChanges(value);
       this.setPosition(options);
     });
@@ -486,7 +819,10 @@ class InjectedMonacoHandler extends MonacoBase {
    * @returns The current value as a string.
    */
   getValue() {
-    this.refreshModel();
+    if (!this.refreshModel()) {
+      return '';
+    }
+
     return this.focusedEditor?.getValue() || this.model?.getValue() || '';
   }
 
@@ -556,15 +892,26 @@ class InjectedMonacoHandler extends MonacoBase {
   bindChange(f: (...args: any[]) => void) {
     this.changeHandler = f;
     this.unbindChange();
-    this.refreshModel();
+    const model = this.refreshModel();
     this.targetId = this.getTargetId();
 
-    const notifyChange = this.wrapSilence(() => {
-      this.refreshModel();
-      f();
+    this.logTarget('bind-change', {
+      boundModelUri: this.getModelUri(model),
     });
 
-    if (this.focusedEditor?.onDidChangeModelContent) {
+    const notifyChange = this.wrapSilence(() => {
+      const refreshedModel = this.refreshModel();
+      if (refreshedModel) {
+        this.logTarget('emit-change', {
+          emittedModelUri: this.getModelUri(refreshedModel),
+        });
+        f();
+      } else {
+        this.logTarget('suppress-change-no-target');
+      }
+    });
+
+    if (model && this.focusedEditor?.onDidChangeModelContent) {
       this.changeListeners.push(
         this.focusedEditor.onDidChangeModelContent((e) => {
           if (!e.isFlush) {
@@ -572,7 +919,7 @@ class InjectedMonacoHandler extends MonacoBase {
           }
         }),
       );
-    } else if (this.model?.onDidChangeContent) {
+    } else if (model && this.model?.onDidChangeContent) {
       this.changeListeners.push(
         this.model.onDidChangeContent((e) => {
           if (!e.isFlush) {
@@ -582,7 +929,7 @@ class InjectedMonacoHandler extends MonacoBase {
       );
     }
 
-    if (this.focusedEditor?.onDidChangeModel) {
+    if (model && this.focusedEditor?.onDidChangeModel) {
       this.changeListeners.push(
         this.focusedEditor.onDidChangeModel(() => {
           if (!this.syncTargetListeners(true)) {
