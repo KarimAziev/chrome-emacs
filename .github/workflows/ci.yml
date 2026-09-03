@@ -2,26 +2,28 @@ name: Node.js with Webpack
 
 on:
   push:
-    branches-ignore: [ main ]
+    branches-ignore: [main]
   pull_request:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v6
-    - name: Set up Node.js
-      uses: actions/setup-node@v6
-      with:
-        node-version-file: '.nvmrc'
+      - uses: actions/checkout@v7
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Run a build script
-      run: npm run build
+      - name: Build Chrome and Firefox extensions
+        run: npm run build
 
-    - name: Run a build script
-      run: npm run test
+      - name: Run unit tests
+        run: npm run test
+
+      - name: Run Chrome end-to-end tests
+        run: npm run test:e2e:chrome
