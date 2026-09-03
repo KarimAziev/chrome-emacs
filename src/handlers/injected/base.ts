@@ -6,6 +6,7 @@ import {
 } from '@/handlers/types';
 import { isString, isError } from '@/util/guard';
 import { messager } from '@/content-script-tools/message';
+import { getPostMessageTargetOrigin } from '@/util/post-message';
 
 /**
  * A base class for creating handlers that are injected into web pages.
@@ -198,7 +199,7 @@ export default class BaseInjectedHandler<Elem extends Element> {
       payload: payload || {},
     };
 
-    window.postMessage(message, location.origin);
+    window.postMessage(message, getPostMessageTargetOrigin(window));
   }
 
   getVisualElement(): Element | Elem | HTMLElement | null | undefined {

@@ -13,6 +13,12 @@ export type PendingDiff = {
   deletedLen: number;
   insertTexts: string[];
 };
+export type GetTextChangeChunksOptions = {
+  initialDiffTimeout?: number;
+  retryDiffTimeout?: number;
+  maxRetryDocLength?: number;
+  smallRetryChangeRatio?: number;
+} & DiffMatchPathOptions;
 
 /**
  * Compute the fraction of characters that changed between two texts according to
@@ -199,4 +205,99 @@ export const runDiff = (
   const tookMs = performance.now() - startMs;
   const coarse = isCoarseDiff(diffs);
   return [diffs, coarse, tookMs];
+};
+
+/**
+ * Compute text changes that can be applied incrementally by editors that
+ * support range-based edits while falling back to a single full-document
+ * replacement when diffing is too noisy or yields no usable chunks.
+ *
+ * @param oldText - Original text.
+ * @param newText - New/target text.
+ * @param options - Diff heuristics and timeout settings.
+ * @returns Array of change chunks, or null when the texts are already equal.
+ */
+export const getTextChangeChunks = (
+  oldText: string,
+  newText: string,
+  options?: GetTextChangeChunksOptions,
+): ChangeChunk[] | null => {
+  if (oldText === newText) {
+    return null;
+  }
+
+  if (!oldText || !newText) {
+    return [
+      {
+        from: 0,
+        to: oldText.length,
+        insert: newText,
+      },
+    ];
+  }
+
+  const {
+    initialDiffTimeout = 1.0,
+    retryDiffTimeout = 3.0,
+    maxRetryDocLength = 200_000,
+    smallRetryChangeRatio = 0.02,
+    ...diffOptions
+  } = options || {};
+
+  const oldTextLen = oldText.length;
+
+  let [diffs, coarse, tookMs] = runDiff(oldText, newText, {
+    ...diffOptions,
+    diffTimeout: initialDiffTimeout,
+  });
+
+  const timedOut = tookMs >= initialDiffTimeout * 1000;
+  const changedFraction = computeChangedFraction(diffs);
+  const shouldRetry =
+    retryDiffTimeout > initialDiffTimeout &&
+    oldTextLen <= maxRetryDocLength &&
+    (coarse || (timedOut && changedFraction >= smallRetryChangeRatio));
+
+  if (shouldRetry) {
+    [diffs, coarse, tookMs] = runDiff(oldText, newText, {
+      ...diffOptions,
+      diffTimeout: retryDiffTimeout,
+    });
+
+    console.log(
+      'Chrome Emacs: diff retry took',
+      tookMs,
+      'ms',
+      'coarse',
+      coarse,
+    );
+  }
+
+  if (coarse && oldTextLen > maxRetryDocLength) {
+    return [
+      {
+        from: 0,
+        to: oldTextLen,
+        insert: newText,
+      },
+    ];
+  }
+
+  const changes = diffsToChanges(diffs);
+
+  if (changes.length === 0) {
+    console.warn(
+      'Chrome-Emacs: No change chunks produced; falling back to full replace',
+    );
+
+    return [
+      {
+        from: 0,
+        to: oldTextLen,
+        insert: newText,
+      },
+    ];
+  }
+
+  return changes;
 };

@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chrome Emacs E2E: Hacked Monaco</title>
+    <style>
+      body {
+        margin: 20px;
+        font-family: system-ui, sans-serif;
+      }
+
+      .controls {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      #editor-host {
+        width: 760px;
+        height: 420px;
+        border: 1px solid #888;
+      }
+
+      .monaco-editor {
+        box-sizing: border-box;
+        width: 100%;
+        height: 100%;
+        padding: 12px;
+      }
+
+      .inputarea {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+      }
+
+      .view-line {
+        white-space: pre;
+        font-family: ui-monospace, monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="controls">
+      <button id="switch-first" type="button">First file</button>
+      <button id="switch-second" type="button">Second file</button>
+      <button id="switch-ambiguous" type="button">
+        Switch without identity
+      </button>
+    </div>
+    <div id="editor-host" data-mode-id="typescript"></div>
+
+    <script>
+      (() => {
+        const makeUri = (value) => ({ toString: () => value });
+        const positionToOffset = (value, position) => {
+          const lines = value.split('\n');
+          let offset = 0;
+          for (let index = 0; index < position.lineNumber - 1; index += 1) {
+            offset += (lines[index] || '').length + 1;
+          }
+          return offset + position.column - 1;
+        };
+
+        const makeModel = (value, uri) => {
+          const listeners = new Set();
+          return {
+            uri: makeUri(uri),
+            getValue: () => value,
+            getValueLength: () => value.length,
+            getLanguageId: () => 'typescript',
+            getOptions: () => ({ tabSize: 2 }),
+            getLineContent: (lineNumber) =>
+              value.split('\n')[lineNumber - 1] || '',
+            getLineMaxColumn: (lineNumber) =>
+              (value.split('\n')[lineNumber - 1] || '').length + 1,
+            getPositionAt: (offset) => {
+              const prefix = value.slice(0, offset);
+              const lines = prefix.split('\n');
+              return {
+                lineNumber: lines.length,
+                column: lines[lines.length - 1].length + 1,
+              };
+            },
+            onDidChangeContent: (listener) => {
+              listeners.add(listener);
+              return { dispose: () => listeners.delete(listener) };
+            },
+            pushStackElement: () => {},
+            pushEditOperations: (_selections, edits) => {
+              const mapped = edits
+                .map((edit) => ({
+                  from: positionToOffset(value, {
+                    lineNumber: edit.range.startLineNumber,
+                    column: edit.range.startColumn,
+                  }),
+                  to: positionToOffset(value, {
+                    lineNumber: edit.range.endLineNumber,
+                    column: edit.range.endColumn,
+                  }),
+                  text: edit.text || '',
+                }))
+                .sort((a, b) => b.from - a.from);
+              for (const edit of mapped) {
+                value =
+                  value.slice(0, edit.from) + edit.text + value.slice(edit.to);
+              }
+              listeners.forEach((listener) => listener({ isFlush: false }));
+              return null;
+            },
+            setValue: (nextValue) => {
+              value = nextValue;
+              listeners.forEach((listener) => listener({ isFlush: true }));
+            },
+          };
+        };
+
+        let editorSequence = 0;
+        const models = new Map();
+        const createEditor = (parent, options) => {
+          const editorId = `fixture-editor-${++editorSequence}`;
+          let root;
+          let textarea;
+          let viewLine;
+
+          const mountRoot = () => {
+            root = document.createElement('div');
+            root.className = 'monaco-editor';
+            root.setAttribute('role', 'code');
+            textarea = document.createElement('textarea');
+            textarea.className = 'inputarea';
+            textarea.setAttribute(
+              'aria-label',
+              'Editor content;Press Alt+F1 for Accessibility Options.',
+            );
+            const viewLines = document.createElement('div');
+            viewLines.className = 'view-lines';
+            viewLine = document.createElement('div');
+            viewLine.className = 'view-line';
+            viewLines.append(viewLine);
+            root.append(textarea, viewLines);
+            parent.append(root);
+          };
+
+          mountRoot();
+
+          let model = options.model;
+          let position = { lineNumber: 1, column: 1 };
+          let modelSubscription;
+          const modelListeners = new Set();
+          const contentListeners = new Set();
+
+          const render = () => {
+            root.dataset.uri = model.uri.toString();
+            if (root.style.display !== 'none') {
+              viewLine.textContent = model.getValue().split('\n')[0];
+            }
+          };
+          const subscribeToModel = () => {
+            modelSubscription?.dispose();
+            modelSubscription = model.onDidChangeContent((event) => {
+              render();
+              contentListeners.forEach((listener) => listener(event));
+            });
+          };
+
+          subscribeToModel();
+          render();
+
+          return {
+            getId: () => editorId,
+            getDomNode: () => root,
+            getModel: () => model,
+            getValue: () => model.getValue(),
+            setModel: (nextModel) => {
+              model = nextModel;
+              root.remove();
+              mountRoot();
+              subscribeToModel();
+              render();
+              modelListeners.forEach((listener) => listener());
+            },
+            executeEdits: (_source, edits) =>
+              model.pushEditOperations(null, edits, () => null),
+            pushUndoStop: () => {},
+            hasTextFocus: () => document.activeElement === textarea,
+            focus: () => textarea.focus(),
+            getPosition: () => position,
+            setPosition: (nextPosition) => {
+              position = nextPosition;
+            },
+            revealPositionInCenterIfOutsideViewport: () => {},
+            revealPosition: () => {},
+            setSelection: () => {},
+            setSelections: () => {},
+            onDidChangeModelContent: (listener) => {
+              contentListeners.add(listener);
+              return { dispose: () => contentListeners.delete(listener) };
+            },
+            onDidChangeModel: (listener) => {
+              modelListeners.add(listener);
+              return { dispose: () => modelListeners.delete(listener) };
+            },
+            dispose: () => {
+              modelSubscription?.dispose();
+              root.remove();
+            },
+          };
+        };
+
+        const firstModel = makeModel(
+          'export const firstFile = "first";\n',
+          'fixture:/first.ts',
+        );
+        const secondModel = makeModel(
+          'export const secondFile = "second";\n',
+          'fixture:/second.ts',
+        );
+        models.set(firstModel.uri.toString(), firstModel);
+        models.set(secondModel.uri.toString(), secondModel);
+
+        window.monaco = {
+          editor: {
+            create: createEditor,
+            getModel: (uri) => models.get(uri?.toString?.() || uri) || null,
+            getModels: () => Array.from(models.values()),
+          },
+          languages: {
+            getLanguages: () => [
+              { id: 'typescript', extensions: ['.ts', '.tsx'] },
+            ],
+          },
+          Selection: class Selection {
+            constructor(
+              selectionStartLineNumber,
+              selectionStartColumn,
+              positionLineNumber,
+              positionColumn,
+            ) {
+              Object.assign(this, {
+                selectionStartLineNumber,
+                selectionStartColumn,
+                positionLineNumber,
+                positionColumn,
+              });
+            }
+          },
+        };
+
+        const host = document.querySelector('#editor-host');
+        let hostEditor = createEditor(host, { model: firstModel });
+        let hostRoot = hostEditor.getDomNode();
+        const selectModel = (model, exposeIdentity) => {
+          hostEditor.dispose();
+          hostEditor = createEditor(host, { model });
+          hostRoot = hostEditor.getDomNode();
+          if (!exposeIdentity) {
+            hostRoot.removeAttribute('data-uri');
+          }
+        };
+
+        document
+          .querySelector('#switch-first')
+          .addEventListener('click', () => selectModel(firstModel, true));
+        document
+          .querySelector('#switch-second')
+          .addEventListener('click', () => selectModel(secondModel, true));
+        document
+          .querySelector('#switch-ambiguous')
+          .addEventListener('click', () => selectModel(secondModel, false));
+
+        window.chromeEmacsFixture = {
+          ready: true,
+          firstModel,
+          secondModel,
+          focusHostEditor: () => hostEditor.focus(),
+        };
+      })();
+    </script>
+  </body>
+</html>

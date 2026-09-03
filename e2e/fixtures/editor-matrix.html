@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chrome Emacs E2E: Editor Matrix</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css"
+    />
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+      }
+
+      body {
+        margin: 0;
+        background: Canvas;
+        color: CanvasText;
+      }
+
+      main {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 32px 20px 72px;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 28px;
+      }
+
+      .note {
+        margin: 0 0 24px;
+        color: color-mix(in srgb, CanvasText 70%, Canvas);
+      }
+
+      .matrix {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+        gap: 18px;
+      }
+
+      section {
+        min-width: 0;
+      }
+
+      h2 {
+        margin: 0 0 8px;
+        font-size: 18px;
+      }
+
+      .status {
+        min-height: 18px;
+        margin: 0 0 8px;
+        font-size: 12px;
+        color: color-mix(in srgb, CanvasText 68%, Canvas);
+      }
+
+      .editor-box,
+      textarea {
+        box-sizing: border-box;
+        width: 100%;
+        min-height: 240px;
+        border: 1px solid color-mix(in srgb, CanvasText 22%, Canvas);
+      }
+
+      textarea {
+        padding: 10px;
+        background: Canvas;
+        color: CanvasText;
+        font:
+          14px/1.45 ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          Consolas,
+          monospace;
+      }
+
+      #ace-editor,
+      #monaco-editor {
+        height: 260px;
+      }
+
+      .CodeMirror {
+        height: 260px;
+      }
+
+      .cm-editor {
+        height: 260px;
+      }
+
+      .ck-editor__editable {
+        min-height: 200px;
+      }
+
+      @media (max-width: 700px) {
+        .matrix {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Chrome Emacs Editor Matrix</h1>
+      <p class="note">
+        This page loads third-party editor builds from CDNs and is intended for
+        manual extension checks against real editor DOMs.
+      </p>
+
+      <div class="matrix">
+        <section data-editor="ace">
+          <h2>Ace</h2>
+          <p id="ace-status" class="status">Loading</p>
+          <div id="ace-editor" class="editor-box"></div>
+        </section>
+
+        <section data-editor="codemirror5">
+          <h2>CodeMirror 5</h2>
+          <p id="cm5-status" class="status">Loading</p>
+          <textarea id="cm5-source">
+function cm5Example() {
+  return "CodeMirror 5";
+}</textarea
+          >
+        </section>
+
+        <section data-editor="codemirror6">
+          <h2>CodeMirror 6</h2>
+          <p id="cm6-status" class="status">Loading</p>
+          <div id="cm6-editor" class="editor-box"></div>
+        </section>
+
+        <section data-editor="monaco">
+          <h2>Monaco</h2>
+          <p id="monaco-status" class="status">Loading</p>
+          <div id="monaco-editor" class="editor-box"></div>
+        </section>
+
+        <section data-editor="ckeditor4">
+          <h2>CKEditor 4</h2>
+          <p id="cke4-status" class="status">Loading</p>
+          <textarea id="ckeditor4-source">
+<p>CKEditor 4 rich text</p>
+<p><strong>Bold</strong> paragraph</p></textarea
+          >
+        </section>
+
+        <section data-editor="ckeditor5">
+          <h2>CKEditor 5</h2>
+          <p id="cke5-status" class="status">Loading</p>
+          <div id="ckeditor5-source">
+            <p>CKEditor 5 rich text</p>
+            <p>
+              <strong>Bold</strong>
+              paragraph
+            </p>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script>
+      const setStatus = (id, text) => {
+        document.getElementById(id).textContent = text;
+      };
+
+      const loadScript = (src) =>
+        new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = src;
+          script.onload = resolve;
+          script.onerror = () => reject(new Error(`Failed to load ${src}`));
+          document.head.appendChild(script);
+        });
+
+      async function loadAce() {
+        try {
+          await loadScript(
+            'https://cdnjs.cloudflare.com/ajax/libs/ace/1.36.5/ace.min.js',
+          );
+          const editor = ace.edit('ace-editor');
+          editor.session.setMode('ace/mode/javascript');
+          editor.setValue(
+            'function aceExample() {\n  return "Ace editor";\n}\n',
+            -1,
+          );
+          window.chromeEmacsAce = editor;
+          setStatus('ace-status', 'Ready');
+        } catch (error) {
+          setStatus('ace-status', error.message);
+        }
+      }
+
+      async function loadCodeMirror5() {
+        try {
+          await loadScript(
+            'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js',
+          );
+          await loadScript(
+            'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js',
+          );
+          window.chromeEmacsCM5 = CodeMirror.fromTextArea(
+            document.getElementById('cm5-source'),
+            {
+              lineNumbers: true,
+              mode: 'javascript',
+            },
+          );
+          setStatus('cm5-status', 'Ready');
+        } catch (error) {
+          setStatus('cm5-status', error.message);
+        }
+      }
+
+      async function loadMonaco() {
+        try {
+          await loadScript(
+            'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.53.0/min/vs/loader.min.js',
+          );
+          require.config({
+            paths: {
+              vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.53.0/min/vs',
+            },
+          });
+          await new Promise((resolve) => {
+            require(['vs/editor/editor.main'], resolve);
+          });
+          window.chromeEmacsMonaco = monaco.editor.create(
+            document.getElementById('monaco-editor'),
+            {
+              value:
+                'export function monacoExample() {\n  return "Monaco";\n}\n',
+              language: 'typescript',
+              minimap: { enabled: false },
+            },
+          );
+          setStatus('monaco-status', 'Ready');
+        } catch (error) {
+          setStatus('monaco-status', error.message);
+        }
+      }
+
+      async function loadCKEditor4() {
+        try {
+          await loadScript(
+            'https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js',
+          );
+          window.chromeEmacsCKE4 = CKEDITOR.replace('ckeditor4-source');
+          setStatus('cke4-status', 'Ready');
+        } catch (error) {
+          setStatus('cke4-status', error.message);
+        }
+      }
+
+      async function loadCKEditor5() {
+        try {
+          await loadScript(
+            'https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js',
+          );
+          window.chromeEmacsCKE5 = await ClassicEditor.create(
+            document.getElementById('ckeditor5-source'),
+          );
+          setStatus('cke5-status', 'Ready');
+        } catch (error) {
+          setStatus('cke5-status', error.message);
+        }
+      }
+
+      void loadAce();
+      void loadCodeMirror5();
+      void loadMonaco();
+      void loadCKEditor4();
+      void loadCKEditor5();
+    </script>
+
+    <script type="module">
+      const setStatus = (id, text) => {
+        document.getElementById(id).textContent = text;
+      };
+
+      try {
+        const [{ EditorView, basicSetup }, { javascript }] = await Promise.all([
+          import('https://esm.sh/codemirror@6.0.1'),
+          import('https://esm.sh/@codemirror/lang-javascript@6.2.2'),
+        ]);
+
+        window.chromeEmacsCM6 = new EditorView({
+          doc: 'function cm6Example() {\n  return "CodeMirror 6";\n}\n',
+          extensions: [basicSetup, javascript()],
+          parent: document.getElementById('cm6-editor'),
+        });
+        setStatus('cm6-status', 'Ready');
+      } catch (error) {
+        setStatus('cm6-status', error.message);
+      }
+    </script>
+  </body>
+</html>

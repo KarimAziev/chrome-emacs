@@ -11,6 +11,31 @@ type HandleTabActionOptions = {
   forceAllowVisibleInputs?: boolean;
 };
 
+const isIgnoredScriptingError = (error: unknown): boolean => {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return /Frame with ID \d+ was removed|No frame with id \d+ in tab|The tab was closed/.test(
+    error.message,
+  );
+};
+
+const logUnexpectedError = (error: unknown): void => {
+  if (isIgnoredScriptingError(error)) {
+    return;
+  }
+
+  console.error(error);
+};
+
+const runTabAction = (
+  tab: chrome.tabs.Tab,
+  options: HandleTabActionOptions = {},
+): void => {
+  void handleTabAction(tab, options).catch(logUnexpectedError);
+};
+
 const LOAD_ACTIVE_ELEMENT_MODULE_PATH =
   'scripts/module/load-active-element-handler.js';
 
@@ -131,14 +156,18 @@ const handleTabAction = async (
     }
   } finally {
     if (overrideApplied) {
-      await chrome.scripting.executeScript({
-        target: { tabId: tab.id, allFrames: true },
-        injectImmediately: true,
-        func: (flagName: string) => {
-          Reflect.deleteProperty(globalThis, flagName);
-        },
-        args: [FORCE_VISIBLE_INPUTS_FLAG],
-      });
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id, allFrames: true },
+          injectImmediately: true,
+          func: (flagName: string) => {
+            Reflect.deleteProperty(globalThis, flagName);
+          },
+          args: [FORCE_VISIBLE_INPUTS_FLAG],
+        });
+      } catch (error) {
+        logUnexpectedError(error);
+      }
     }
   }
 };
@@ -203,7 +232,7 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
  * Adds an event listener to the Chrome extension's action button (e.g., toolbar icon).
  * On click, it injects the 'content-script.js' into the current tab.
  */
-chrome.action.onClicked.addListener(handleTabAction);
+chrome.action.onClicked.addListener(runTabAction);
 
 /**
  * Listens for a connection to the Chrome runtime (extension) and opens a WebSocket
@@ -244,6 +273,6 @@ chrome.contextMenus.onClicked.addListener(({ menuItemId }, tab) => {
   }
 
   if (menuItemId === 'chrome-emacs-edit') {
-    void handleTabAction(tab, { forceAllowVisibleInputs: true });
+    runTabAction(tab, { forceAllowVisibleInputs: true });
   }
 });
