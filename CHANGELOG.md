@@ -1,6 +1,6 @@
 # Changelog
 
-## Version 1.2.0 (UNPUBLISHED)
+## Version 1.2.0 (2026-05-03)
 
 - Improved `Overleaf` integration. In split view, double-clicking a location in the PDF now updates the location in Emacs as well. Also, switching to another file now updates Emacs with the new content.
 
