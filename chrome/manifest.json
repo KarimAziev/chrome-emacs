@@ -2,7 +2,7 @@
   "name": "__MSG_appName__",
   "short_name": "__MSG_appShortName__",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArflNcedLFWudm5UG77hTbhwEY65U070/a9DoLX0sW38n/jy+ZXL2B+E143eSUj4gdxLeNW7MnpAlIfLx7oT/yUaBnW6wsFyaaUH2abjjLBJ0KWc+IOe8CIvdaMCC7G3RXoU9oyiUXKIf1h3cyQ3X1iK+naY6K85KyTf/eHV+QtFSqtPNtJnnFTbxHr/+35ybMmhTrSKH6vmfMsOyM1tIXc78QhdXarr4K1dAsvUBlj96r6yMi+rrZDS9DeXiAHAAUFKNQJh9u7NoFqqGrQmZpR03ZwUZOiDf2PPsLN9MTCo9Dcf7Lqf/mUQo9uR73CtHVo0Gypfgp1G0oELbTBzsEwIDAQAB",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "manifest_version": 3,
   "minimum_chrome_version": "116",
   "description": "__MSG_appDescription__",
