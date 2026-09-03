@@ -3,7 +3,7 @@
 ## Version 1.3.0 (UNPUBLISHED)
 
 - Added file-switching support in Monaco and CodeMirror 6 editors, including platforms such as CoderPad and StackBlitz. Previously, stale files could override the original file.
-- Added support for undo/redo operations in Monaco and CodeMirror 5 editors; previously, this was available only in CodeMirror 6.
+- Added support for undo/redo operations in Monaco and CodeMirror 5 editors. Previously, this was available only in CodeMirror 6.
 
 ## Version 1.2.0 (2026-05-03)
 
